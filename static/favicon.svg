@@ -1,24 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="tvRed" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="vBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="vGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="50%" stop-color="#e11d48" />
       <stop offset="100%" stop-color="#be123c" />
     </linearGradient>
-    <linearGradient id="tvBg" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#1e293b" />
-      <stop offset="100%" stop-color="#0f172a" />
+    <linearGradient id="vAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#818cf8" />
     </linearGradient>
+    <filter id="vGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#f43f5e" flood-opacity="0.5"/>
+    </filter>
   </defs>
-  <!-- Background Badge -->
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#tvBg)" stroke="#e11d48" stroke-width="2.5"/>
-  <!-- Top Red Accent Bar -->
-  <rect x="4" y="4" width="56" height="15" rx="10" fill="url(#tvRed)"/>
-  <!-- Live Indicator Dot -->
-  <circle cx="12" cy="11.5" r="3" fill="#ffffff"/>
-  <!-- Top Label: TV -->
-  <text x="20" y="14.5" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="900" letter-spacing="1">ЭФИР</text>
-  <!-- Main TVT Text -->
-  <text x="32" y="44" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="900" text-anchor="middle" letter-spacing="0.5">ТВТ</text>
-  <!-- Bottom Cyan Bar -->
-  <rect x="14" y="50" width="36" height="4" rx="2" fill="#38bdf8"/>
+
+  <!-- Background Base -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#vBg)" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- Subtle Inner Border -->
+  <rect x="3.5" y="3.5" width="57" height="57" rx="14.5" fill="none" stroke="#e11d48" stroke-width="1" stroke-opacity="0.4"/>
+
+  <!-- Top Cyan Broadcast Accent Bar -->
+  <rect x="18" y="7" width="28" height="3" rx="1.5" fill="url(#vAccent)"/>
+
+  <!-- Stylized Bold Letter V -->
+  <path d="M 13 15 L 24 15 L 32 38 L 40 15 L 51 15 L 37.5 49 C 36.5 51.5 33.5 53 32 53 C 30.5 53 27.5 51.5 26.5 49 Z" 
+        fill="url(#vGrad)" 
+        filter="url(#vGlow)"/>
+
+  <!-- Inner Shading Highlight on V -->
+  <path d="M 16 17 L 22 17 L 32 43 L 34 38 L 26 17 Z" 
+        fill="#ffffff" 
+        fill-opacity="0.25"/>
+
+  <!-- Live Pulse Dot in Top Right -->
+  <circle cx="50" cy="11" r="2.5" fill="#f43f5e"/>
 </svg>

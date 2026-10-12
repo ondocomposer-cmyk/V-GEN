@@ -245,14 +245,18 @@ def test_ai_provider_connection(
                     break
 
             err_lower = last_err.lower()
+            if "leaked" in err_lower or "compromised" in err_lower:
+                return False, "Ваш API ключ был заблокирован Google из-за утечки в публичный доступ (Your API key was reported as leaked). Перейдите в Google AI Studio (aistudio.google.com/apikey), создайте новый бесплатный ключ и вставьте его сюда."
+            if "resource_exhausted" in err_lower or "429" in err_lower or "quota" in err_lower:
+                return False, "Превышен минутный или суточный лимит бесплатных запросов к модели (Quota Exceeded). Подождите либо создайте новый бесплатный ключ в Google AI Studio."
             if "api_key_service_blocked" in err_lower or "access_token_type_unsupported" in err_lower:
                 return False, "Ключ заблокирован для сервиса Gemini API (код API_KEY_SERVICE_BLOCKED). Скопируйте основной ключ из Google AI Studio (начинающийся на 'AIzaSy...')."
-            if any(w in err_lower for w in ["location", "country", "user location", "403"]):
-                return False, "Геоблокировка Google: API недоступен из вашего региона напрямую. Включите системный VPN (США/Европа) либо укажите прокси."
+            if any(w in err_lower for w in ["user location is not supported", "location is not supported", "country not supported"]):
+                return False, "Геоблокировка Google: API недоступен из вашего региона напрямую. Включите системный VPN (США/Европа) либо укажите рабочий прокси."
             if any(w in err_lower for w in ["timed out", "timeout", "winerror 10060", "connection refused", "connecterror"]):
                 return False, "Таймаут соединения с Google: проверьте интернет или включите VPN/прокси."
-            if "api key not valid" in err_lower or "400" in last_err:
-                return False, "Неверный API ключ Google Gemini: проверьте ключ из Google AI Studio."
+            if "api key not valid" in err_lower or ("400" in last_err and "key" in err_lower):
+                return False, "Неверный API ключ Google Gemini: проверьте правильность ключа из Google AI Studio."
             return False, f"Ошибка Gemini API: {last_err}"
 
         else:

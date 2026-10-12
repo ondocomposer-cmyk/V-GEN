@@ -31,3 +31,8 @@ cache/temp/
 
 # Runtime scratch
 scratch/
+
+# Local sensitive configuration and runtime news items
+data/config.json
+data/news_items.json
+!data/config.example.json
