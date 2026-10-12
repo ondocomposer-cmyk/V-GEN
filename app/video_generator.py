@@ -143,18 +143,25 @@ def render_news_video(
         total_slides_duration = lead_in + voice_duration + lead_out
 
         # Проверяем медиафайлы: фото или кусочки видео (b-roll города)
-        city_videos_dir = getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")
+        broll_dirs = getattr(config, 'broll_dirs', []) or [getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")]
         valid_media = []
         for media_name in image_filenames:
             if not media_name:
                 continue
             p1 = os.path.join(CACHE_IMG_DIR, media_name)
-            p2 = os.path.join(city_videos_dir, media_name)
             if os.path.exists(p1):
                 valid_media.append(p1)
-            elif os.path.exists(p2):
-                valid_media.append(p2)
-            elif os.path.exists(media_name):
+                continue
+            found = False
+            for b_dir in broll_dirs:
+                if not b_dir:
+                    continue
+                p2 = os.path.join(b_dir, media_name)
+                if os.path.exists(p2):
+                    valid_media.append(p2)
+                    found = True
+                    break
+            if not found and os.path.exists(media_name):
                 valid_media.append(media_name)
 
         if not valid_media:
@@ -224,10 +231,33 @@ def render_news_video(
         # 2. Подготовка аудиодорожки слайдов (голос + музыка)
         # Определяем музыку
         music_file = ""
-        if music_option == "default":
-            music_file = getattr(config, 'default_music_path', r"F:\новостник\музыка.wav")
+        if music_option == "none":
+            music_file = ""
+        elif music_option == "default":
+            tracks = getattr(config, 'music_tracks', []) or []
+            def_track = next((t for t in tracks if (getattr(t, 'id', '') if hasattr(t, 'id') else t.get('id', '')) == 'default'), None)
+            if def_track:
+                t_p = getattr(def_track, 'path', '') if hasattr(def_track, 'path') else def_track.get('path', '')
+                if os.path.exists(t_p):
+                    music_file = t_p
+            if not music_file:
+                music_file = getattr(config, 'default_music_path', r"F:\новостник\музыка.wav")
         elif music_option == "custom" and custom_music_path and os.path.exists(custom_music_path):
             music_file = custom_music_path
+        elif music_option:
+            tracks = getattr(config, 'music_tracks', []) or []
+            for t in tracks:
+                t_id = getattr(t, 'id', '') if hasattr(t, 'id') else t.get('id', '')
+                t_path = getattr(t, 'path', '') if hasattr(t, 'path') else t.get('path', '')
+                if (t_id == music_option or t_path == music_option) and os.path.exists(t_path):
+                    music_file = t_path
+                    break
+            if not music_file and os.path.exists(music_option):
+                music_file = music_option
+            if not music_file and custom_music_path and os.path.exists(custom_music_path):
+                music_file = custom_music_path
+            if not music_file:
+                music_file = getattr(config, 'default_music_path', r"F:\новостник\музыка.wav")
 
         has_music = bool(music_file and os.path.exists(music_file) and music_option != "none")
         music_db = getattr(config, 'music_volume_db', -5.4)

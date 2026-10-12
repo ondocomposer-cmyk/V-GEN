@@ -238,11 +238,24 @@
                 <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto justify-end">
                     
                     <!-- Music Selector & Mute -->
-                    <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5">
-                        <i class="fa-solid fa-music text-xs text-purple-400"></i>
-                        <select id="musicSelect_{{ item.id }}" onchange="updateMusicOption('{{ item.id }}', this.value)" class="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer">
-                            <option value="default" {% if item.music_option == 'default' %}selected{% endif %}>Фоновая музыка (-5.4 dB)</option>
-                            <option value="none" {% if item.music_option == 'none' %}selected{% endif %}>Без музыки (траурная / тишина)</option>
+                    <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 max-w-[280px]">
+                        <i class="fa-solid fa-music text-xs text-purple-400 shrink-0"></i>
+                        <select id="musicSelect_{{ item.id }}" onchange="updateMusicOption('{{ item.id }}', this.value)" class="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer truncate w-full">
+                            <option value="none" {% if item.music_option == 'none' %}selected{% endif %}>Без музыки (тишина / траурная)</option>
+                            {% if config.music_tracks %}
+                                {% for track in config.music_tracks %}
+                                    {% if track.enabled %}
+                                    <option value="{{ track.id }}" {% if item.music_option == track.id or (item.music_option == 'default' and (track.id == 'default' or loop.first)) or (item.music_option == track.path) %}selected{% endif %}>
+                                        🎵 {{ track.name }}
+                                    </option>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <option value="default" {% if item.music_option == 'default' or not item.music_option %}selected{% endif %}>Фоновая музыка (-5.4 dB)</option>
+                            {% endif %}
+                            {% if item.custom_music_path %}
+                            <option value="custom" {% if item.music_option == 'custom' %}selected{% endif %}>Загруженный трек</option>
+                            {% endif %}
                         </select>
                     </div>
 
@@ -364,9 +377,12 @@
                     <i class="fa-solid fa-film text-sky-400"></i>
                     <span>База видео архива (B-Roll)</span>
                 </h3>
-                <p class="text-xs text-slate-400 mt-0.5">
-                    Папка архива: <span class="font-mono text-sky-300 font-semibold" id="brollFolderDisplay">F:\КОНСЕРВЫ</span>
-                </p>
+                <div class="flex items-center space-x-2 text-xs text-slate-400 mt-0.5">
+                    <span>Папка архива:</span>
+                    <select id="brollDirSelect" onchange="switchBrollFolder(this.value)" class="bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-xs text-sky-300 font-mono focus:outline-none cursor-pointer">
+                        <option value="0" id="brollFolderDisplay">F:\КОНСЕРВЫ</option>
+                    </select>
+                </div>
             </div>
             <div class="flex items-center space-x-2">
                 <label class="px-3 py-1.5 text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white rounded-lg transition-all flex items-center space-x-1 cursor-pointer shadow">

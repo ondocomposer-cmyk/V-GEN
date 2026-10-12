@@ -226,27 +226,6 @@
                 </div>
             </div>
 
-            <!-- Music -->
-            <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                    <span>Фоновая музыка (бэкграунд)</span>
-                    <span class="text-purple-400 lowercase font-normal">F:\новостник\музыка.wav</span>
-                </label>
-                <input type="text" id="cfgMusicPath" value="{{ config.default_music_path }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono">
-                <div class="mt-2 bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-3">
-                    <audio controls class="w-full">
-                        <source src="/media/preview/music" type="audio/wav">
-                    </audio>
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="text-slate-400 font-medium">Громкость фоновой музыки по ТЗ:</span>
-                        <div class="flex items-center space-x-1 font-mono">
-                            <input type="number" step="0.1" id="cfgMusicDb" value="{{ config.music_volume_db }}" class="w-20 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sky-400 text-center font-bold">
-                            <span class="text-slate-400">дБ</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Channel Logo -->
             <div class="space-y-2">
                 <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
@@ -272,43 +251,159 @@
                         <option value="bottom_right" {% if config.logo_position == 'bottom_right' %}selected{% endif %}>Снизу справа</option>
                     </select>
                 </div>
-
-                <div class="space-y-2 pt-2 border-t border-slate-800">
-                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                        <span>База видео города (B-Roll)</span>
-                        <span class="text-sky-400 font-normal">F:\КОНСЕРВЫ</span>
-                    </label>
-                    <input type="text" id="cfgBrollDir" value="{{ config.city_videos_dir }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono">
-                    <p class="text-[11px] text-slate-500">
-                        Папка с видеороликами видов города для вставки в сюжеты вместо фото. При монтаже длительность роликов строго ограничивается под хронометраж слайдов.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Timings -->
-            <div class="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block border-b border-slate-800 pb-2">
-                    Тайминги монтажа по ТЗ
-                </span>
-                <div class="flex items-center justify-between text-xs">
-                    <span class="text-slate-300">Пауза показа первого слайда до старта голоса:</span>
-                    <span class="font-mono font-bold text-sky-400">1.0 сек</span>
-                </div>
-                <div class="flex items-center justify-between text-xs">
-                    <span class="text-slate-300">Показ последнего слайда после окончания голоса:</span>
-                    <span class="font-mono font-bold text-sky-400">3.0 сек</span>
-                </div>
-                <div class="flex items-center justify-between text-xs">
-                    <span class="text-slate-300">Рекомендуемая смена слайдов:</span>
-                    <span class="font-mono font-bold text-purple-400">~8.0 сек (динамически под ролик)</span>
-                </div>
-                <div class="flex items-center justify-between text-xs">
-                    <span class="text-slate-300">Затухание изображения и музыки (Fade Out):</span>
-                    <span class="font-mono font-bold text-emerald-400">1.5 сек</span>
-                </div>
             </div>
 
         </div>
+
+        <!-- Section 2.1: Background Music Selection & Paths (Multiple Choice) -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-music text-purple-400"></i>
+                        <span>Фоновая музыка: пути и список треков на выбор</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Укажите несколько путей к аудиофайлам (WAV/MP3). В новостной ленте для каждого сюжета можно выбирать подходящий трек.
+                    </p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs">
+                        <span class="text-slate-400">Громкость:</span>
+                        <input type="number" step="0.1" id="cfgMusicDb" value="{{ config.music_volume_db }}" class="w-16 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-sky-400 text-center font-bold font-mono">
+                        <span class="text-slate-400">дБ</span>
+                    </div>
+                    <label class="px-3 py-1.5 bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 border border-purple-700/60 rounded-lg text-xs font-bold cursor-pointer flex items-center space-x-1.5 transition-all">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Загрузить аудио</span>
+                        <input type="file" accept="audio/*" class="hidden" onchange="uploadAdminMusicTrack(this)">
+                    </label>
+                    <button type="button" onclick="addMusicTrackRow('', '', false)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all">
+                        <i class="fa-solid fa-plus text-purple-400"></i>
+                        <span>+ Добавить путь</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- List of Music Tracks -->
+            <div id="musicTracksContainer" class="space-y-3">
+                {% for track in config.music_tracks %}
+                <div class="music-track-row bg-slate-900/90 border border-slate-800 rounded-lg p-3 flex flex-col md:flex-row md:items-center justify-between gap-3" data-track-id="{{ track.id }}">
+                    <div class="flex items-center space-x-3 flex-1 min-w-0">
+                        <label class="flex items-center space-x-1.5 text-xs text-slate-400 cursor-pointer shrink-0" title="Использовать как трек по умолчанию">
+                            <input type="radio" name="default_music_radio" class="cfg-music-default-radio text-purple-500 focus:ring-0" {% if config.default_music_path == track.path or loop.first %}checked{% endif %}>
+                            <span class="text-[11px] font-semibold text-slate-300">Основной</span>
+                        </label>
+                        <div class="w-full sm:w-44 shrink-0">
+                            <input type="text" class="cfg-music-name-input w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white font-medium focus:border-purple-500 focus:outline-none" placeholder="Название трека" value="{{ track.name }}">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <input type="text" class="cfg-music-path-input w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-300 font-mono focus:border-purple-500 focus:outline-none" placeholder="F:\путь\к_треку.wav" value="{{ track.path }}">
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0 justify-end">
+                        <audio controls class="h-8 max-w-[180px] bg-slate-950 rounded">
+                            <source src="/media/preview/music?track_id={{ track.id }}&path={{ track.path | urlencode }}" type="audio/wav">
+                        </audio>
+                        <button type="button" onclick="removeMusicTrackRow(this)" class="p-2 text-slate-500 hover:text-red-400 transition-colors" title="Удалить трек">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                {% else %}
+                <div class="music-track-row bg-slate-900/90 border border-slate-800 rounded-lg p-3 flex flex-col md:flex-row md:items-center justify-between gap-3" data-track-id="default">
+                    <div class="flex items-center space-x-3 flex-1 min-w-0">
+                        <label class="flex items-center space-x-1.5 text-xs text-slate-400 cursor-pointer shrink-0">
+                            <input type="radio" name="default_music_radio" checked class="cfg-music-default-radio text-purple-500">
+                            <span class="text-[11px] font-semibold text-slate-300">Основной</span>
+                        </label>
+                        <div class="w-full sm:w-44 shrink-0">
+                            <input type="text" class="cfg-music-name-input w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white" value="Эфирная музыка ТВТ" placeholder="Название">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <input type="text" class="cfg-music-path-input w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-300 font-mono" value="{{ config.default_music_path }}" placeholder="F:\новостник\музыка.wav">
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0">
+                        <audio controls class="h-8 max-w-[180px] bg-slate-950 rounded">
+                            <source src="/media/preview/music" type="audio/wav">
+                        </audio>
+                        <button type="button" onclick="removeMusicTrackRow(this)" class="p-2 text-slate-500 hover:text-red-400">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <!-- Hidden fallback input for backwards compatibility -->
+            <input type="hidden" id="cfgMusicPath" value="{{ config.default_music_path }}">
+        </div>
+
+        <!-- Section 2.2: B-Roll Video Folders (Multiple Paths) -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-folder-tree text-sky-400"></i>
+                        <span>Папки с роликами B-Roll (видеоархив города / консервы)</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Укажите одну или несколько папок с видеороликами (квадрокоптер, городские виды, съемки с мест). Сервис автоматически ищет и подключает видео из всех указанных мест.
+                    </p>
+                </div>
+                <button type="button" onclick="addBrollDirRow('')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all self-start sm:self-auto">
+                    <i class="fa-solid fa-plus text-sky-400"></i>
+                    <span>+ Добавить папку B-Roll</span>
+                </button>
+            </div>
+
+            <!-- List of B-Roll directories -->
+            <div id="brollDirsContainer" class="space-y-3">
+                {% set b_dirs = config.broll_dirs if config.broll_dirs else [config.city_videos_dir] %}
+                {% for b_dir in b_dirs %}
+                <div class="broll-dir-row bg-slate-900/90 border border-slate-800 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2.5 flex-1 min-w-0">
+                        <i class="fa-solid fa-folder-open text-sky-400 text-sm shrink-0"></i>
+                        <input type="text" class="cfg-broll-dir-input w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none" value="{{ b_dir }}" placeholder="Например: F:\КОНСЕРВЫ или D:\Видео\Архив" onblur="validateBrollDirRow(this)">
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0 justify-end">
+                        <span class="broll-dir-status text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">Проверка...</span>
+                        <button type="button" onclick="removeBrollDirRow(this)" class="p-1.5 text-slate-500 hover:text-red-400 transition-colors" title="Удалить путь">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <!-- Hidden fallback input for backwards compatibility -->
+            <input type="hidden" id="cfgBrollDir" value="{{ config.city_videos_dir }}">
+        </div>
+
+        <!-- Timings -->
+        <div class="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block border-b border-slate-800 pb-2">
+                Тайминги монтажа по ТЗ
+            </span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
+                    <span class="text-slate-400 block mb-1">Пауза 1-го слайда до голоса:</span>
+                    <span class="font-mono font-bold text-sky-400 text-sm">1.0 сек</span>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
+                    <span class="text-slate-400 block mb-1">Показ после окончания голоса:</span>
+                    <span class="font-mono font-bold text-sky-400 text-sm">3.0 сек</span>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
+                    <span class="text-slate-400 block mb-1">Смена слайдов/B-Roll:</span>
+                    <span class="font-mono font-bold text-purple-400 text-sm">Равномерно под читку (~8 сек)</span>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
+                    <span class="text-slate-400 block mb-1">Синхронный Fade Out (видео+аудио):</span>
+                    <span class="font-mono font-bold text-emerald-400 text-sm">1.5 сек</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Bottom Save Bar -->

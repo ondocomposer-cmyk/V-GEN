@@ -43,6 +43,12 @@ class NewsSource(BaseModel):
     enabled: bool = True
     category: str = "Общие"
 
+class MusicTrack(BaseModel):
+    id: str
+    name: str
+    path: str
+    enabled: bool = True
+
 class AppConfig(BaseModel):
     # Провайдер нейросети для поиска, отбора и рерайта (Google Gemini)
     ai_provider: str = "gemini"
@@ -69,9 +75,13 @@ class AppConfig(BaseModel):
     # Оформление и медиа
     bumper_path: str = r"F:\новостник\отбивка.mp4"
     default_music_path: str = r"F:\новостник\музыка.wav"
+    music_tracks: List[MusicTrack] = Field(default_factory=lambda: [
+        MusicTrack(id="default", name="Эфирная музыка ТВТ (музыка.wav)", path=r"F:\новостник\музыка.wav", enabled=True)
+    ])
     logo_path: str = r"F:\новостник\логотип.png"
     logo_position: str = "top_right"  # 'top_right', 'top_left', 'bottom_right'
     city_videos_dir: str = r"F:\КОНСЕРВЫ"
+    broll_dirs: List[str] = Field(default_factory=lambda: [r"F:\КОНСЕРВЫ"])
     
     music_volume_db: float = -5.4
     voice_lead_in: float = 1.0
@@ -152,6 +162,21 @@ def load_config() -> AppConfig:
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                
+                # Синхронизация broll_dirs и city_videos_dir
+                if "broll_dirs" not in data or not data["broll_dirs"]:
+                    fallback_broll = data.get("city_videos_dir", r"F:\КОНСЕРВЫ")
+                    data["broll_dirs"] = [fallback_broll] if fallback_broll else [r"F:\КОНСЕРВЫ"]
+                if data.get("broll_dirs") and not data.get("city_videos_dir"):
+                    data["city_videos_dir"] = data["broll_dirs"][0]
+
+                # Синхронизация music_tracks и default_music_path
+                default_music = data.get("default_music_path", r"F:\новостник\музыка.wav")
+                if "music_tracks" not in data or not data["music_tracks"]:
+                    data["music_tracks"] = [
+                        {"id": "default", "name": "Эфирная музыка ТВТ (музыка.wav)", "path": default_music, "enabled": True}
+                    ]
+                
                 return AppConfig(**data)
         except Exception as e:
             print(f"Error loading config, using defaults: {e}")

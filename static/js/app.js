@@ -324,7 +324,14 @@ function closeVideoPreviewModal() {
 let currentBrollNewsId = null;
 let currentBrollPath = "";
 let currentBrollParentPath = null;
+let currentBrollDirIdx = 0;
 let brollSearchDebounceTimer = null;
+
+function switchBrollFolder(idx) {
+    currentBrollDirIdx = parseInt(idx) || 0;
+    currentBrollPath = "";
+    browseBroll("", "");
+}
 
 function openBrollModal(newsId) {
     currentBrollNewsId = newsId;
@@ -383,6 +390,7 @@ async function browseBroll(subpath = "", search = "") {
     const breadcrumbs = document.getElementById("brollBreadcrumbs");
     const upBtn = document.getElementById("brollUpBtn");
     const folderDisplay = document.getElementById("brollFolderDisplay");
+    const dirSelect = document.getElementById("brollDirSelect");
 
     if (loading) loading.classList.remove("hidden");
     if (foldersSec) foldersSec.classList.add("hidden");
@@ -390,14 +398,18 @@ async function browseBroll(subpath = "", search = "") {
     if (emptyState) emptyState.classList.add("hidden");
 
     try {
-        const url = `/api/broll/browse?subpath=${encodeURIComponent(subpath || "")}&search=${encodeURIComponent(search || "")}`;
+        const url = `/api/broll/browse?subpath=${encodeURIComponent(subpath || "")}&search=${encodeURIComponent(search || "")}&dir_idx=${currentBrollDirIdx}`;
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
 
         if (loading) loading.classList.add("hidden");
 
-        if (folderDisplay && data.broll_dir) {
+        if (dirSelect && data.broll_dirs && data.broll_dirs.length > 0) {
+            dirSelect.innerHTML = data.broll_dirs.map((d, i) => `
+                <option value="${i}" ${i === currentBrollDirIdx ? 'selected' : ''}>${escapeHtml(d)}</option>
+            `).join("");
+        } else if (folderDisplay && data.broll_dir) {
             folderDisplay.textContent = data.broll_dir;
         }
 
@@ -495,7 +507,7 @@ async function browseBroll(subpath = "", search = "") {
                         </div>
                         <div class="p-3 flex-1 flex flex-col justify-between space-y-2">
                             <p class="text-xs font-bold text-white truncate" title="${escapeHtml(v.name)}">${escapeHtml(v.name)}</p>
-                            <button onclick="insertBrollToNews('${escapeJsStr(v.rel_path)}')" class="w-full py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow">
+                            <button onclick="insertBrollToNews('${escapeJsStr(v.rel_path)}', ${v.dir_idx !== undefined ? v.dir_idx : 'currentBrollDirIdx'})" class="w-full py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow">
                                 <i class="fa-solid fa-plus"></i> Вставить в сюжет
                             </button>
                         </div>
@@ -545,13 +557,13 @@ function escapeJsStr(str) {
     return String(str).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
-async function insertBrollToNews(rel_path) {
+async function insertBrollToNews(rel_path, dir_idx) {
     if (!currentBrollNewsId) return;
     try {
         const resp = await fetch(`/api/news/${currentBrollNewsId}/media/add-broll`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ rel_path })
+            body: JSON.stringify({ rel_path, dir_idx: (dir_idx !== undefined ? dir_idx : currentBrollDirIdx) })
         });
         if (resp.ok) {
             closeBrollModal();
@@ -571,6 +583,7 @@ async function uploadToBrollLibrary(input) {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("subpath", currentBrollPath || "");
+    formData.append("dir_idx", currentBrollDirIdx);
 
     const label = input.closest("label");
     const origHtml = label ? label.innerHTML : "";
@@ -864,14 +877,59 @@ async function saveAllSettings() {
         currentCfg.proxy_url = getElVal("cfgProxyUrl", currentCfg.proxy_url);
         currentCfg.vk_service_token = getElVal("cfgVkToken", currentCfg.vk_service_token);
         currentCfg.bumper_path = getElVal("cfgBumperPath", currentCfg.bumper_path);
-        currentCfg.default_music_path = getElVal("cfgMusicPath", currentCfg.default_music_path);
         
         const dbVal = parseFloat(getElVal("cfgMusicDb", "-5.4"));
         currentCfg.music_volume_db = isNaN(dbVal) ? -5.4 : dbVal;
         
         currentCfg.logo_path = getElVal("cfgLogoPath", currentCfg.logo_path);
         currentCfg.logo_position = getElVal("cfgLogoPos", currentCfg.logo_position);
-        currentCfg.city_videos_dir = getElVal("cfgBrollDir", currentCfg.city_videos_dir || "F:\\КОНСЕРВЫ");
+
+        // B-Roll folders (Multiple paths)
+        const brollInputs = document.querySelectorAll(".cfg-broll-dir-input");
+        const brollDirs = [];
+        brollInputs.forEach(inp => {
+            const val = inp.value.trim();
+            if (val && !brollDirs.includes(val)) {
+                brollDirs.push(val);
+            }
+        });
+        if (brollDirs.length === 0) {
+            const singleBroll = getElVal("cfgBrollDir", "F:\\КОНСЕРВЫ");
+            brollDirs.push(singleBroll || "F:\\КОНСЕРВЫ");
+        }
+        currentCfg.broll_dirs = brollDirs;
+        currentCfg.city_videos_dir = brollDirs[0];
+
+        // Background Music tracks (Multiple paths)
+        const trackRows = document.querySelectorAll("#musicTracksContainer .music-track-row");
+        const musicTracks = [];
+        let defaultMusicPath = "";
+        trackRows.forEach((row, idx) => {
+            const trackId = row.getAttribute("data-track-id") || `track_${idx}`;
+            const nameInp = row.querySelector(".cfg-music-name-input");
+            const pathInp = row.querySelector(".cfg-music-path-input");
+            const defRadio = row.querySelector(".cfg-music-default-radio");
+            const name = nameInp ? nameInp.value.trim() : "";
+            const path = pathInp ? pathInp.value.trim() : "";
+            if (path) {
+                const isDef = defRadio ? defRadio.checked : (idx === 0);
+                if (isDef && !defaultMusicPath) {
+                    defaultMusicPath = path;
+                }
+                musicTracks.push({
+                    id: trackId,
+                    name: name || `Трек ${idx + 1}`,
+                    path: path,
+                    enabled: true
+                });
+            }
+        });
+        if (musicTracks.length > 0) {
+            currentCfg.music_tracks = musicTracks;
+            currentCfg.default_music_path = defaultMusicPath || musicTracks[0].path;
+        } else {
+            currentCfg.default_music_path = getElVal("cfgMusicPath", currentCfg.default_music_path || "F:\\новостник\\музыка.wav");
+        }
 
         // Sources toggles
         const rows = document.querySelectorAll("#sourcesTableBody tr");
@@ -1047,4 +1105,160 @@ async function checkFetchStatusOnLoad() {
 
 document.addEventListener("DOMContentLoaded", () => {
     checkFetchStatusOnLoad();
+    initAdminMediaValidation();
 });
+
+// --- Admin Media Managers: Music & B-Roll ---
+
+function addMusicTrackRow(name = "", path = "", isDefault = false) {
+    const container = document.getElementById("musicTracksContainer");
+    if (!container) return;
+    const trackId = `track_${Date.now()}`;
+    const row = document.createElement("div");
+    row.className = "music-track-row bg-slate-900/90 border border-slate-800 rounded-lg p-3 flex flex-col md:flex-row md:items-center justify-between gap-3";
+    row.setAttribute("data-track-id", trackId);
+    row.innerHTML = `
+        <div class="flex items-center space-x-3 flex-1 min-w-0">
+            <label class="flex items-center space-x-1.5 text-xs text-slate-400 cursor-pointer shrink-0" title="Использовать как трек по умолчанию">
+                <input type="radio" name="default_music_radio" class="cfg-music-default-radio text-purple-500 focus:ring-0" ${isDefault ? 'checked' : ''}>
+                <span class="text-[11px] font-semibold text-slate-300">Основной</span>
+            </label>
+            <div class="w-full sm:w-44 shrink-0">
+                <input type="text" class="cfg-music-name-input w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white font-medium focus:border-purple-500 focus:outline-none" placeholder="Название трека" value="${escapeHtml(name)}">
+            </div>
+            <div class="flex-1 min-w-0">
+                <input type="text" class="cfg-music-path-input w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-300 font-mono focus:border-purple-500 focus:outline-none" placeholder="F:\\путь\\к_треку.wav" value="${escapeHtml(path)}" onchange="updateMusicRowPreview(this)">
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 shrink-0 justify-end">
+            <audio controls class="h-8 max-w-[180px] bg-slate-950 rounded">
+                <source src="/media/preview/music?path=${encodeURIComponent(path)}" type="audio/wav">
+            </audio>
+            <button type="button" onclick="removeMusicTrackRow(this)" class="p-2 text-slate-500 hover:text-red-400 transition-colors" title="Удалить трек">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(row);
+}
+
+function removeMusicTrackRow(btn) {
+    const row = btn.closest(".music-track-row");
+    if (!row) return;
+    const container = document.getElementById("musicTracksContainer");
+    if (container && container.querySelectorAll(".music-track-row").length <= 1) {
+        alert("Должен оставаться хотя бы один музыкальный трек!");
+        return;
+    }
+    row.remove();
+}
+
+function updateMusicRowPreview(input) {
+    const row = input.closest(".music-track-row");
+    if (!row) return;
+    const audio = row.querySelector("audio");
+    if (audio && input.value.trim()) {
+        audio.src = `/media/preview/music?path=${encodeURIComponent(input.value.trim())}`;
+        audio.load();
+    }
+}
+
+async function uploadAdminMusicTrack(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const label = input.closest("label");
+    const origHtml = label ? label.innerHTML : "";
+    if (label) label.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Загрузка...`;
+
+    try {
+        const resp = await fetch("/api/upload/music", {
+            method: "POST",
+            body: formData
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            showToast("Аудиофайл загружен!");
+            addMusicTrackRow(data.name || file.name, data.path, false);
+        } else {
+            alert("Ошибка загрузки музыки");
+        }
+    } catch (e) {
+        alert("Ошибка: " + e);
+    } finally {
+        if (label) label.innerHTML = origHtml;
+        input.value = "";
+    }
+}
+
+function addBrollDirRow(path = "") {
+    const container = document.getElementById("brollDirsContainer");
+    if (!container) return;
+    const row = document.createElement("div");
+    row.className = "broll-dir-row bg-slate-900/90 border border-slate-800 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3";
+    row.innerHTML = `
+        <div class="flex items-center space-x-2.5 flex-1 min-w-0">
+            <i class="fa-solid fa-folder-open text-sky-400 text-sm shrink-0"></i>
+            <input type="text" class="cfg-broll-dir-input w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none" value="${escapeHtml(path)}" placeholder="Например: F:\\КОНСЕРВЫ или D:\\Видео\\Архив" onblur="validateBrollDirRow(this)">
+        </div>
+        <div class="flex items-center space-x-2 shrink-0 justify-end">
+            <span class="broll-dir-status text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">Проверка...</span>
+            <button type="button" onclick="removeBrollDirRow(this)" class="p-1.5 text-slate-500 hover:text-red-400 transition-colors" title="Удалить путь">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(row);
+    const input = row.querySelector(".cfg-broll-dir-input");
+    if (input && path) validateBrollDirRow(input);
+}
+
+function removeBrollDirRow(btn) {
+    const row = btn.closest(".broll-dir-row");
+    if (!row) return;
+    const container = document.getElementById("brollDirsContainer");
+    if (container && container.querySelectorAll(".broll-dir-row").length <= 1) {
+        alert("Должна быть указана хотя бы одна папка B-Roll!");
+        return;
+    }
+    row.remove();
+}
+
+async function validateBrollDirRow(input) {
+    const row = input.closest(".broll-dir-row");
+    if (!row) return;
+    const statusEl = row.querySelector(".broll-dir-status");
+    if (!statusEl) return;
+    const path = input.value.trim();
+    if (!path) {
+        statusEl.className = "broll-dir-status text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-500 font-mono";
+        statusEl.textContent = "Не указан";
+        return;
+    }
+    statusEl.className = "broll-dir-status text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono";
+    statusEl.textContent = "Проверка...";
+    try {
+        const resp = await fetch(`/api/system/check-path?path=${encodeURIComponent(path)}`);
+        if (resp.ok) {
+            const d = await resp.json();
+            if (d.exists && d.is_dir) {
+                statusEl.className = "broll-dir-status text-[11px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono";
+                statusEl.textContent = d.video_count > 0 ? `Доступно (${d.video_count} видео)` : "Папка пуста";
+            } else {
+                statusEl.className = "broll-dir-status text-[11px] px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-mono";
+                statusEl.textContent = "Не найдена";
+            }
+        }
+    } catch (e) {
+        statusEl.textContent = "Ошибка сети";
+    }
+}
+
+function initAdminMediaValidation() {
+    const inputs = document.querySelectorAll(".cfg-broll-dir-input");
+    if (inputs.length > 0) {
+        inputs.forEach(inp => validateBrollDirRow(inp));
+    }
+}

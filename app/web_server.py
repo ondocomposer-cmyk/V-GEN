@@ -105,18 +105,44 @@ async def archive_page(request: Request):
 
 # --- Direct File Preview Endpoints ---
 @app.get("/media/preview/{file_type}")
-async def media_preview(file_type: str):
+async def media_preview(file_type: str, path: Optional[str] = None, track_id: Optional[str] = None):
     config = load_config()
-    path = ""
+    target_path = ""
     if file_type == "bumper":
-        path = config.bumper_path
+        target_path = path or config.bumper_path
     elif file_type == "music":
-        path = config.default_music_path
+        if path and os.path.exists(path):
+            target_path = path
+        elif track_id:
+            for t in getattr(config, 'music_tracks', []):
+                t_id = getattr(t, 'id', '') if hasattr(t, 'id') else t.get('id', '')
+                t_p = getattr(t, 'path', '') if hasattr(t, 'path') else t.get('path', '')
+                if t_id == track_id and os.path.exists(t_p):
+                    target_path = t_p
+                    break
+        if not target_path:
+            target_path = config.default_music_path
     elif file_type == "logo":
-        path = config.logo_path
+        target_path = path or config.logo_path
     
-    if path and os.path.exists(path):
-        return FileResponse(path)
+    if target_path and os.path.exists(target_path):
+        ext = os.path.splitext(target_path)[1].lower()
+        media_type = None
+        if ext in ['.mp3']:
+            media_type = "audio/mpeg"
+        elif ext in ['.wav']:
+            media_type = "audio/wav"
+        elif ext in ['.m4a', '.aac']:
+            media_type = "audio/aac"
+        elif ext in ['.ogg']:
+            media_type = "audio/ogg"
+        elif ext in ['.flac']:
+            media_type = "audio/flac"
+        elif ext in ['.mp4']:
+            media_type = "video/mp4"
+        elif ext in ['.png']:
+            media_type = "image/png"
+        return FileResponse(target_path, media_type=media_type)
     raise HTTPException(status_code=404, detail="File not found")
 
 # --- Favicon Endpoints ---
@@ -271,14 +297,20 @@ async def upload_custom_media(news_id: str, file: UploadFile = File(...)):
 
 # --- B-Roll (База видео города) Endpoints ---
 
+# --- B-Roll (База видео города) Endpoints ---
+
 def get_safe_broll_path(broll_dir: str, rel_path: str) -> str:
     if not rel_path:
         return os.path.normpath(broll_dir)
-    clean = rel_path.replace('\\', '/').strip('/')
-    parts = clean.split('/')
-    if any(p == '..' or p == '' for p in parts):
-        raise HTTPException(status_code=400, detail="Invalid path traversal")
-    full = os.path.normpath(os.path.join(broll_dir, *parts))
+    # Если передан уже абсолютный путь, проверяем его внутри broll_dir
+    if os.path.isabs(rel_path):
+        full = os.path.normpath(rel_path)
+    else:
+        clean = rel_path.replace('\\', '/').strip('/')
+        parts = clean.split('/')
+        if any(p == '..' or p == '' for p in parts):
+            raise HTTPException(status_code=400, detail="Invalid path traversal")
+        full = os.path.normpath(os.path.join(broll_dir, *parts))
     try:
         if os.path.commonpath([os.path.abspath(broll_dir), os.path.abspath(full)]) != os.path.abspath(broll_dir):
             raise HTTPException(status_code=403, detail="Path outside b-roll directory")
@@ -287,10 +319,17 @@ def get_safe_broll_path(broll_dir: str, rel_path: str) -> str:
     return full
 
 @app.get("/api/broll/browse")
-async def browse_broll(subpath: str = "", search: str = ""):
+async def browse_broll(subpath: str = "", search: str = "", dir_idx: int = 0):
     config = load_config()
-    broll_dir = getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")
-    os.makedirs(broll_dir, exist_ok=True)
+    raw_dirs = getattr(config, 'broll_dirs', []) or [getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")]
+    broll_dirs = [d.strip() for d in raw_dirs if d and d.strip()]
+    if not broll_dirs:
+        broll_dirs = [r"F:\КОНСЕРВЫ"]
+    
+    if dir_idx < 0 or dir_idx >= len(broll_dirs):
+        dir_idx = 0
+    active_broll_dir = broll_dirs[dir_idx]
+    os.makedirs(active_broll_dir, exist_ok=True)
     video_exts = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"}
 
     search_query = search.strip()
@@ -298,53 +337,63 @@ async def browse_broll(subpath: str = "", search: str = ""):
         q = search_query.lower()
         matched_videos = []
         count = 0
-        for root, dirs, files in os.walk(broll_dir):
-            dirs[:] = [d for d in dirs if not d.startswith('.')]
-            for f in files:
-                ext = os.path.splitext(f)[1].lower()
-                if ext in video_exts:
-                    full_p = os.path.join(root, f)
-                    rel_v = os.path.relpath(full_p, broll_dir).replace('\\', '/')
-                    rel_f = os.path.relpath(root, broll_dir).replace('\\', '/')
-                    if rel_f == '.':
-                        rel_f = ""
-                    if q in f.lower() or q in rel_f.lower() or q in rel_v.lower():
-                        try:
-                            size_mb = round(os.path.getsize(full_p) / (1024 * 1024), 2)
-                        except Exception:
-                            size_mb = 0.0
-                        matched_videos.append({
-                            "name": f,
-                            "rel_path": rel_v,
-                            "folder": rel_f,
-                            "size_mb": size_mb,
-                            "stream_url": f"/media/broll/stream?path={urllib.parse.quote(rel_v)}",
-                            "thumb_url": f"/media/broll/thumb?path={urllib.parse.quote(rel_v)}"
-                        })
-                        count += 1
-                        if count >= 150:
-                            break
+        # Поиск по ВСЕМ настроенным папкам B-Roll
+        for d_i, d_path in enumerate(broll_dirs):
+            if not os.path.exists(d_path):
+                continue
+            for root, dirs, files in os.walk(d_path):
+                dirs[:] = [d for d in dirs if not d.startswith('.')]
+                for f in files:
+                    ext = os.path.splitext(f)[1].lower()
+                    if ext in video_exts:
+                        full_p = os.path.join(root, f)
+                        rel_v = os.path.relpath(full_p, d_path).replace('\\', '/')
+                        rel_f = os.path.relpath(root, d_path).replace('\\', '/')
+                        if rel_f == '.':
+                            rel_f = ""
+                        if q in f.lower() or q in rel_f.lower() or q in rel_v.lower():
+                            try:
+                                size_mb = round(os.path.getsize(full_p) / (1024 * 1024), 2)
+                            except Exception:
+                                size_mb = 0.0
+                            matched_videos.append({
+                                "name": f,
+                                "rel_path": rel_v,
+                                "folder": rel_f,
+                                "dir_idx": d_i,
+                                "dir_name": os.path.basename(d_path) or d_path,
+                                "size_mb": size_mb,
+                                "stream_url": f"/media/broll/stream?path={urllib.parse.quote(rel_v)}&dir_idx={d_i}",
+                                "thumb_url": f"/media/broll/thumb?path={urllib.parse.quote(rel_v)}&dir_idx={d_i}"
+                            })
+                            count += 1
+                            if count >= 150:
+                                break
+                if count >= 150:
+                    break
             if count >= 150:
                 break
         matched_videos.sort(key=lambda x: x["name"].lower())
         return {
-            "broll_dir": broll_dir,
+            "broll_dirs": broll_dirs,
+            "active_dir_idx": dir_idx,
+            "broll_dir": active_broll_dir,
             "is_search": True,
             "search_query": search_query,
             "current_path": "",
             "parent_path": None,
-            "breadcrumbs": [{"name": "КОНСЕРВЫ", "path": ""}, {"name": f"Поиск: «{search_query}»", "path": ""}],
+            "breadcrumbs": [{"name": "Все папки архива", "path": ""}, {"name": f"Поиск: «{search_query}»", "path": ""}],
             "folders": [],
             "videos": matched_videos,
             "total_folders": 0,
             "total_videos": len(matched_videos)
         }
 
-    target_dir = get_safe_broll_path(broll_dir, subpath)
+    target_dir = get_safe_broll_path(active_broll_dir, subpath)
     if not os.path.isdir(target_dir):
         raise HTTPException(status_code=404, detail="Папка не найдена")
 
-    clean_subpath = os.path.relpath(target_dir, broll_dir).replace('\\', '/')
+    clean_subpath = os.path.relpath(target_dir, active_broll_dir).replace('\\', '/')
     if clean_subpath == '.':
         clean_subpath = ""
 
@@ -357,7 +406,7 @@ async def browse_broll(subpath: str = "", search: str = ""):
                     v_count = sum(1 for f in os.scandir(entry.path) if f.is_file() and os.path.splitext(f.name)[1].lower() in video_exts)
                 except Exception:
                     v_count = 0
-                rel_f = os.path.relpath(entry.path, broll_dir).replace('\\', '/')
+                rel_f = os.path.relpath(entry.path, active_broll_dir).replace('\\', '/')
                 folders.append({
                     "name": entry.name,
                     "rel_path": rel_f,
@@ -370,14 +419,16 @@ async def browse_broll(subpath: str = "", search: str = ""):
                         size_mb = round(entry.stat().st_size / (1024 * 1024), 2)
                     except Exception:
                         size_mb = 0.0
-                    rel_v = os.path.relpath(entry.path, broll_dir).replace('\\', '/')
+                    rel_v = os.path.relpath(entry.path, active_broll_dir).replace('\\', '/')
                     videos.append({
                         "name": entry.name,
                         "rel_path": rel_v,
                         "folder": clean_subpath,
+                        "dir_idx": dir_idx,
+                        "dir_name": os.path.basename(active_broll_dir) or active_broll_dir,
                         "size_mb": size_mb,
-                        "stream_url": f"/media/broll/stream?path={urllib.parse.quote(rel_v)}",
-                        "thumb_url": f"/media/broll/thumb?path={urllib.parse.quote(rel_v)}"
+                        "stream_url": f"/media/broll/stream?path={urllib.parse.quote(rel_v)}&dir_idx={dir_idx}",
+                        "thumb_url": f"/media/broll/thumb?path={urllib.parse.quote(rel_v)}&dir_idx={dir_idx}"
                     })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка чтения папки: {e}")
@@ -385,7 +436,8 @@ async def browse_broll(subpath: str = "", search: str = ""):
     folders.sort(key=lambda x: x["name"].lower())
     videos.sort(key=lambda x: x["name"].lower())
 
-    breadcrumbs = [{"name": "КОНСЕРВЫ", "path": ""}]
+    active_name = os.path.basename(active_broll_dir) or active_broll_dir
+    breadcrumbs = [{"name": active_name, "path": ""}]
     if clean_subpath:
         parts = clean_subpath.split('/')
         acc = []
@@ -401,7 +453,9 @@ async def browse_broll(subpath: str = "", search: str = ""):
         parent_path = None
 
     return {
-        "broll_dir": broll_dir,
+        "broll_dirs": broll_dirs,
+        "active_dir_idx": dir_idx,
+        "broll_dir": active_broll_dir,
         "is_search": False,
         "search_query": "",
         "current_path": clean_subpath,
@@ -414,15 +468,36 @@ async def browse_broll(subpath: str = "", search: str = ""):
     }
 
 @app.get("/api/broll/list")
-async def get_broll_list(subpath: str = "", search: str = ""):
-    return await browse_broll(subpath=subpath, search=search)
+async def get_broll_list(subpath: str = "", search: str = "", dir_idx: int = 0):
+    return await browse_broll(subpath=subpath, search=search, dir_idx=dir_idx)
 
 @app.get("/media/broll/thumb")
-async def get_broll_thumb(path: str):
+async def get_broll_thumb(path: str, dir_idx: int = 0):
     config = load_config()
-    broll_dir = getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")
-    full_path = get_safe_broll_path(broll_dir, path)
-    if not os.path.isfile(full_path):
+    raw_dirs = getattr(config, 'broll_dirs', []) or [getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")]
+    broll_dirs = [d.strip() for d in raw_dirs if d and d.strip()]
+    if not broll_dirs:
+        broll_dirs = [r"F:\КОНСЕРВЫ"]
+
+    full_path = None
+    if 0 <= dir_idx < len(broll_dirs):
+        try:
+            cand = get_safe_broll_path(broll_dirs[dir_idx], path)
+            if os.path.isfile(cand):
+                full_path = cand
+        except Exception:
+            pass
+    if not full_path:
+        for d in broll_dirs:
+            try:
+                cand = get_safe_broll_path(d, path)
+                if os.path.isfile(cand):
+                    full_path = cand
+                    break
+            except Exception:
+                pass
+
+    if not full_path or not os.path.isfile(full_path):
         raise HTTPException(status_code=404, detail="Видеофайл не найден")
 
     thumbs_dir = os.path.join(CACHE_IMG_DIR, "broll_thumbs")
@@ -459,27 +534,59 @@ async def get_broll_thumb(path: str):
     raise HTTPException(status_code=404, detail="Не удалось сформировать превью")
 
 @app.get("/media/broll/stream")
-async def stream_broll_video(path: str):
+async def stream_broll_video(path: str, dir_idx: int = 0):
     config = load_config()
-    broll_dir = getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")
-    full_path = get_safe_broll_path(broll_dir, path)
-    if not os.path.isfile(full_path):
+    raw_dirs = getattr(config, 'broll_dirs', []) or [getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")]
+    broll_dirs = [d.strip() for d in raw_dirs if d and d.strip()]
+    if not broll_dirs:
+        broll_dirs = [r"F:\КОНСЕРВЫ"]
+
+    full_path = None
+    if 0 <= dir_idx < len(broll_dirs):
+        try:
+            cand = get_safe_broll_path(broll_dirs[dir_idx], path)
+            if os.path.isfile(cand):
+                full_path = cand
+        except Exception:
+            pass
+    if not full_path:
+        for d in broll_dirs:
+            try:
+                cand = get_safe_broll_path(d, path)
+                if os.path.isfile(cand):
+                    full_path = cand
+                    break
+            except Exception:
+                pass
+
+    if not full_path or not os.path.isfile(full_path):
         raise HTTPException(status_code=404, detail="Видеофайл не найден")
     return FileResponse(full_path, media_type="video/mp4")
 
 @app.get("/media/broll/{filename:path}")
 async def get_broll_file(filename: str):
     config = load_config()
-    broll_dir = getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")
-    full_path = get_safe_broll_path(broll_dir, filename)
-    if os.path.isfile(full_path):
-        return FileResponse(full_path, media_type="video/mp4")
+    raw_dirs = getattr(config, 'broll_dirs', []) or [getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")]
+    broll_dirs = [d.strip() for d in raw_dirs if d and d.strip()]
+    for d in broll_dirs:
+        try:
+            full_path = get_safe_broll_path(d, filename)
+            if os.path.isfile(full_path):
+                return FileResponse(full_path, media_type="video/mp4")
+        except Exception:
+            pass
     raise HTTPException(status_code=404, detail="B-roll video not found")
 
 @app.post("/api/broll/upload")
-async def upload_broll_file(file: UploadFile = File(...), subpath: str = Form("")):
+async def upload_broll_file(file: UploadFile = File(...), subpath: str = Form(""), dir_idx: int = Form(0)):
     config = load_config()
-    broll_dir = getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")
+    raw_dirs = getattr(config, 'broll_dirs', []) or [getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")]
+    broll_dirs = [d.strip() for d in raw_dirs if d and d.strip()]
+    if not broll_dirs:
+        broll_dirs = [r"F:\КОНСЕРВЫ"]
+    if not (0 <= dir_idx < len(broll_dirs)):
+        dir_idx = 0
+    broll_dir = broll_dirs[dir_idx]
     target_dir = get_safe_broll_path(broll_dir, subpath)
     os.makedirs(target_dir, exist_ok=True)
 
@@ -508,13 +615,14 @@ async def upload_broll_file(file: UploadFile = File(...), subpath: str = Form(""
         except Exception:
             pass
 
-        return {"success": True, "filename": dest_filename, "rel_path": rel_v}
+        return {"success": True, "filename": dest_filename, "rel_path": rel_v, "dir_idx": dir_idx}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 class AddBrollRequest(BaseModel):
     filename: Optional[str] = None
     rel_path: Optional[str] = None
+    dir_idx: Optional[int] = 0
 
 @app.post("/api/news/{news_id}/media/add-broll")
 async def add_broll_to_news(news_id: str, payload: AddBrollRequest):
@@ -527,9 +635,31 @@ async def add_broll_to_news(news_id: str, payload: AddBrollRequest):
         raise HTTPException(status_code=400, detail="Не указан файл видео")
 
     config = load_config()
-    broll_dir = getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")
-    src_path = get_safe_broll_path(broll_dir, target_rel)
-    if not os.path.isfile(src_path):
+    raw_dirs = getattr(config, 'broll_dirs', []) or [getattr(config, 'city_videos_dir', r"F:\КОНСЕРВЫ")]
+    broll_dirs = [d.strip() for d in raw_dirs if d and d.strip()]
+    if not broll_dirs:
+        broll_dirs = [r"F:\КОНСЕРВЫ"]
+
+    src_path = None
+    idx = payload.dir_idx or 0
+    if 0 <= idx < len(broll_dirs):
+        try:
+            cand = get_safe_broll_path(broll_dirs[idx], target_rel)
+            if os.path.isfile(cand):
+                src_path = cand
+        except Exception:
+            pass
+    if not src_path:
+        for d in broll_dirs:
+            try:
+                cand = get_safe_broll_path(d, target_rel)
+                if os.path.isfile(cand):
+                    src_path = cand
+                    break
+            except Exception:
+                pass
+
+    if not src_path or not os.path.isfile(src_path):
         raise HTTPException(status_code=404, detail="Видео в базе города не найдено")
 
     base_name = os.path.basename(src_path)
@@ -806,14 +936,37 @@ async def upload_logo_file(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/system/check-path")
+async def check_path_exists(path: str):
+    p = path.strip()
+    if not p:
+        return {"exists": False, "is_dir": False, "is_file": False, "count": 0}
+    exists = os.path.exists(p)
+    is_dir = os.path.isdir(p) if exists else False
+    is_file = os.path.isfile(p) if exists else False
+    count = 0
+    if is_dir:
+        video_exts = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"}
+        try:
+            count = sum(1 for root, _, files in os.walk(p) for f in files if os.path.splitext(f)[1].lower() in video_exts)
+        except Exception:
+            count = 0
+    return {"exists": exists, "is_dir": is_dir, "is_file": is_file, "video_count": count}
+
 @app.post("/api/upload/music")
 async def upload_music_file(file: UploadFile = File(...)):
-    music_filename = f"custom_music_{int(time.time())}.wav"
-    dest = os.path.join(BASE_DIR, "cache", "music", music_filename)
+    music_dir = os.path.join(BASE_DIR, "cache", "music")
+    os.makedirs(music_dir, exist_ok=True)
+    orig_name, orig_ext = os.path.splitext(file.filename or "music.wav")
+    if not orig_ext:
+        orig_ext = ".wav"
+    clean_name = sanitize_russian_filename(orig_name, max_len=40)
+    music_filename = f"{clean_name}_{int(time.time())}{orig_ext.lower()}"
+    dest = os.path.join(music_dir, music_filename)
     try:
         with open(dest, "wb") as f:
             shutil.copyfileobj(file.file, f)
-        return {"success": True, "path": dest, "filename": music_filename}
+        return {"success": True, "path": dest, "filename": music_filename, "name": orig_name or "Фоновая музыка"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
