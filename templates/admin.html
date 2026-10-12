@@ -311,52 +311,6 @@
         </div>
     </div>
 
-    <!-- Section 3: News Sources Management -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
-        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
-            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
-                <i class="fa-solid fa-rss text-amber-500"></i>
-                <span>Источники новостей (RSS-ленты и сайты)</span>
-            </h2>
-            <span class="text-xs text-slate-400">За последние {{ config.news_days }} дней</span>
-        </div>
-
-        <!-- Sources Table -->
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs text-slate-300">
-                <thead class="bg-slate-950 text-slate-400 uppercase font-semibold">
-                    <tr>
-                        <th class="p-3">Вкл</th>
-                        <th class="p-3">Источник</th>
-                        <th class="p-3">Категория</th>
-                        <th class="p-3">URL Ленты</th>
-                        <th class="p-3 text-right">Действия</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-800" id="sourcesTableBody">
-                    {% for s in config.sources %}
-                    <tr class="hover:bg-slate-800/40" data-source-id="{{ s.id }}">
-                        <td class="p-3">
-                            <input type="checkbox" class="source-toggle rounded bg-slate-900 border-slate-700 text-sky-600 focus:ring-0 cursor-pointer" {% if s.enabled %}checked{% endif %}>
-                        </td>
-                        <td class="p-3 font-bold text-white">{{ s.name }}</td>
-                        <td class="p-3 text-slate-400">{{ s.category }}</td>
-                        <td class="p-3 font-mono text-[11px] text-slate-400 truncate max-w-xs">{{ s.url }}</td>
-                        <td class="p-3 text-right space-x-2">
-                            <button onclick="testSourceUrl('{{ s.url }}')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded border border-slate-700">
-                                Тест
-                            </button>
-                            <button onclick="removeSource('{{ s.id }}')" class="px-2 py-1 bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white rounded border border-slate-700">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
     <!-- Bottom Save Bar -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 sticky bottom-4 z-40 bg-slate-900/95 backdrop-blur border-sky-500/30">
         <div>
@@ -364,7 +318,7 @@
                 <i class="fa-solid fa-floppy-disk text-sky-400"></i>
                 <span>Применить и сохранить все параметры</span>
             </h3>
-            <p class="text-xs text-slate-400 mt-0.5">Ключи API, выбранные модели нейросетей, дикторы и источники сохраняются в конфигурацию сервиса.</p>
+            <p class="text-xs text-slate-400 mt-0.5">Ключи API, поисковый промпт, модели нейросетей, диктор и медиафайлы сохраняются в конфигурацию сервиса.</p>
         </div>
         <button onclick="saveAllSettings()" id="btnBottomSave" class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-sky-950/50 flex items-center justify-center space-x-2 transition-all">
             <i class="fa-solid fa-floppy-disk"></i>
