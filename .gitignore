@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Temporary and IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Cache media (exclude huge runtime generated files, keep folders)
+cache/images/*
+!cache/images/.gitkeep
+cache/audio/*
+!cache/audio/.gitkeep
+cache/videos/*
+!cache/videos/.gitkeep
+cache/music/*
+!cache/music/.gitkeep
+cache/temp/
+*.temp.*
+*.raw
+
+# Runtime scratch
+scratch/

@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+
+{% block title %}V-GEN{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Action Bar -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-black text-white flex items-center space-x-2">
+                <span>Эфирная лента новостей</span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-600/20 text-red-400 border border-red-500/30">
+                    За последние {{ config.news_days }} дней
+                </span>
+            </h1>
+            <p class="text-sm text-slate-400 mt-1">
+                Автоматическая фильтрация дублей, сокращение до 1000 знаков для диктора, подбор Full HD фото (UNCROP) и синтез речи.
+            </p>
+        </div>
+
+        <div class="flex items-center space-x-3 w-full md:w-auto">
+            <button id="btnFetchNews" onclick="startNewsFetch()" class="w-full md:w-auto px-5 py-3 rounded-lg bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-red-900/30 flex items-center justify-center space-x-2 transition-all">
+                <i class="fa-solid fa-arrows-rotate" id="fetchIcon"></i>
+                <span>Собрать и обработать новости за 7 дней</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Progress Banner (Hidden by default, shown when task is running) -->
+    <div id="fetchProgressCard" class="hidden bg-slate-900 border border-sky-500/30 rounded-xl p-5 shadow-xl space-y-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+                <span id="fetchStatusMessage" class="text-sm font-medium text-sky-300">Выполняется сборка...</span>
+            </div>
+            <span id="fetchStatusPercent" class="text-sm font-bold text-sky-400">0%</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+            <div id="fetchProgressBar" class="bg-gradient-to-r from-sky-500 to-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- News Items Container -->
+    {% if not news %}
+    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-12 text-center space-y-4">
+        <div class="w-16 h-16 bg-slate-800 text-slate-400 rounded-full flex items-center justify-center mx-auto text-2xl">
+            <i class="fa-solid fa-bullhorn"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white">Список новостей пока пуст</h3>
+        <p class="text-sm text-slate-400 max-w-md mx-auto">
+            Нажмите кнопку «Собрать и обработать новости за 7 дней» выше, чтобы автоматически загрузить свежие выпуски из подключенных источников.
+        </p>
+        <button onclick="startNewsFetch()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-semibold transition-all">
+            Запустить первичный сбор
+        </button>
+    </div>
+    {% else %}
+    
+    <div class="space-y-6" id="newsFeedContainer">
+        {% for item in news %}
+        <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-6 shadow-xl space-y-5 transition-all" id="newsCard_{{ item.id }}">
+            
+            <!-- Card Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-4">
+                <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-xs font-semibold bg-sky-950 text-sky-400 border border-sky-800/60">
+                            {{ item.source }}
+                        </span>
+                        {% if item.rubric %}
+                        <span class="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-950/70 text-amber-300 border border-amber-800/60 flex items-center space-x-1">
+                            <i class="fa-solid fa-tag text-[10px]"></i>
+                            <span>{{ item.rubric }}</span>
+                        </span>
+                        {% endif %}
+                        {% if item.timing %}
+                        <span class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 flex items-center space-x-1">
+                            <i class="fa-regular fa-clock text-[10px]"></i>
+                            <span>{{ item.timing }}</span>
+                        </span>
+                        {% endif %}
+                        <span class="text-xs text-slate-400">
+                            {{ item.published_at[:16]|replace("T", " ") }}
+                        </span>
+                        {% if item.link %}
+                        <a href="{{ item.link }}" target="_blank" class="text-xs text-slate-500 hover:text-sky-400 transition-colors">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Первоисточник
+                        </a>
+                        {% endif %}
+                    </div>
+                    <h2 class="text-lg font-bold text-white tracking-tight leading-snug">
+                        {{ item.title }}
+                    </h2>
+                </div>
+
+                <div class="flex items-center space-x-2 self-start sm:self-auto">
+                    <button onclick="deleteNewsItem('{{ item.id }}')" title="Удалить новость" class="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-all text-xs">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- News Anchor Text Section -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+                        <i class="fa-solid fa-microphone-lines text-sky-400"></i>
+                        <span>Текст для диктора новостника (до 1000 знаков)</span>
+                    </label>
+                    <div class="flex items-center space-x-2">
+                        <span id="charCount_{{ item.id }}" class="text-xs font-bold px-2 py-0.5 rounded {% if item.text_length <= 1000 %}bg-emerald-950 text-emerald-400 border border-emerald-800/60{% else %}bg-red-950 text-red-400 border border-red-800/60{% endif %}">
+                            {{ item.text_length }} / 1000 знаков
+                        </span>
+                        <button onclick="saveNewsText('{{ item.id }}')" class="px-2.5 py-1 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-sky-300 rounded border border-slate-700 transition-all">
+                            <i class="fa-solid fa-floppy-disk"></i> Сохранить
+                        </button>
+                    </div>
+                </div>
+                <textarea 
+                    id="anchorText_{{ item.id }}" 
+                    rows="3" 
+                    oninput="updateCharCount('{{ item.id }}')"
+                    class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-all font-sans leading-relaxed">{{ item.adapted_text }}</textarea>
+            </div>
+
+            <!-- Image Timeline Filmstrip -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+                        <i class="fa-solid fa-images text-purple-400"></i>
+                        <span>Линейка видеоряда (Full HD 1080p, эффект Кена Бернса)</span>
+                        <span class="text-slate-500 lowercase font-normal" id="slideCount_{{ item.id }}">({{ item.images|length }} слайдов)</span>
+                    </label>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openBrollModal('{{ item.id }}')" class="px-2.5 py-1 text-xs font-semibold bg-sky-950/80 hover:bg-sky-900 text-sky-300 rounded border border-sky-700/60 transition-all flex items-center space-x-1 shadow-sm">
+                            <i class="fa-solid fa-film text-sky-400"></i>
+                            <span>Видео города (B-Roll)</span>
+                        </button>
+                        <button onclick="openSearchModal('{{ item.id }}')" class="px-2.5 py-1 text-xs font-semibold bg-purple-950/60 hover:bg-purple-900 text-purple-300 rounded border border-purple-800/60 transition-all flex items-center space-x-1">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>Найти фото</span>
+                        </button>
+                        <label class="px-2.5 py-1 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-all flex items-center space-x-1 cursor-pointer">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>Загрузить фото/видео</span>
+                            <input type="file" accept="image/*,video/*" class="hidden" onchange="uploadImage('{{ item.id }}', this)">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Horizontal scrollable strip -->
+                <div class="overflow-x-auto pb-2 scrollbar-thin">
+                    <div class="flex items-center space-x-3 min-w-max p-1" id="timeline_{{ item.id }}">
+                        {% for img in item.images %}
+                        {% set is_vid = img.endswith('.mp4') or img.endswith('.mov') or img.endswith('.avi') or img.endswith('.mkv') or img.endswith('.webm') %}
+                        <div class="relative group bg-slate-950 border {% if is_vid %}border-sky-500/50{% else %}border-slate-800{% endif %} rounded-lg overflow-hidden shadow-md w-44 aspect-video flex-shrink-0" data-img="{{ img }}">
+                            {% if is_vid %}
+                            <img src="/cache/images/{{ img }}.jpg" onerror="this.src='/static/img/favicon-512x512.png'" alt="Video clip" class="w-full h-full object-cover">
+                            {% else %}
+                            <img src="/cache/images/{{ img }}" alt="Slide" class="w-full h-full object-cover">
+                            {% endif %}
+                            
+                            <!-- Badges -->
+                            <div class="absolute top-1 left-1 bg-black/70 backdrop-blur text-white text-[10px] font-bold px-1.5 py-0.5 rounded border border-white/10 flex items-center space-x-1">
+                                <span>#{{ loop.index }}</span>
+                                {% if is_vid %}
+                                <span class="text-sky-400 font-bold">▶ ВИДЕО</span>
+                                {% else %}
+                                <i class="fa-solid fa-image text-purple-400"></i>
+                                {% endif %}
+                            </div>
+
+                            <!-- Controls overlay -->
+                            <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-1 p-1">
+                                <button onclick="moveSlide('{{ item.id }}', '{{ img }}', -1)" title="Сдвинуть влево" class="p-1.5 bg-slate-800 hover:bg-sky-600 text-white rounded text-xs transition-all">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                {% if is_vid %}
+                                <button onclick="previewVideo('/cache/images/{{ img }}')" title="Смотреть видео" class="p-1.5 bg-slate-800 hover:bg-sky-600 text-white rounded text-xs transition-all">
+                                    <i class="fa-solid fa-play"></i>
+                                </button>
+                                {% else %}
+                                <button onclick="previewSlide('/cache/images/{{ img }}')" title="Увеличить фото" class="p-1.5 bg-slate-800 hover:bg-purple-600 text-white rounded text-xs transition-all">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                                {% endif %}
+                                <button onclick="removeSlide('{{ item.id }}', '{{ img }}')" title="Удалить кадр" class="p-1.5 bg-slate-800 hover:bg-red-600 text-white rounded text-xs transition-all">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                                <button onclick="moveSlide('{{ item.id }}', '{{ img }}', 1)" title="Сдвинуть вправо" class="p-1.5 bg-slate-800 hover:bg-sky-600 text-white rounded text-xs transition-all">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice, Music & Video Render Controls -->
+            <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-4 flex flex-col lg:flex-row items-center justify-between gap-4">
+                
+                <!-- Voice Player & Regenerate -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto" id="voiceBox_{{ item.id }}">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full {% if item.voice_filename %}bg-emerald-400 animate-pulse{% else %}bg-slate-500{% endif %}" id="voiceIndicator_{{ item.id }}"></span>
+                        <span class="text-xs font-bold text-slate-300">Озвучка:</span>
+                    </div>
+
+                    <div id="voicePlayerContainer_{{ item.id }}" class="flex items-center space-x-3">
+                        {% if item.voice_filename %}
+                        <audio controls class="h-9 w-60 rounded bg-slate-900" id="audioPlayer_{{ item.id }}">
+                            <source src="/cache/audio/{{ item.voice_filename }}" type="audio/wav">
+                            Ваш браузер не поддерживает аудио.
+                        </audio>
+                        <span class="text-xs text-slate-400 font-medium whitespace-nowrap" id="audioDuration_{{ item.id }}">
+                            ⏱️ {{ item.voice_duration }} сек
+                        </span>
+                        <span class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-sky-400 border border-slate-700 font-mono whitespace-nowrap" id="audioEngine_{{ item.id }}">
+                            {{ item.voice_engine }}
+                        </span>
+                        {% else %}
+                        <span class="text-xs text-slate-400 italic" id="audioPlaceholder_{{ item.id }}">
+                            Озвучка не создана
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <button onclick="regenerateVoice('{{ item.id }}')" id="btnRegenVoice_{{ item.id }}" class="px-3 py-1.5 text-xs font-bold {% if item.voice_filename %}bg-slate-800 hover:bg-slate-700 text-sky-300 border-slate-700{% else %}bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-600 shadow-md{% endif %} rounded-lg border transition-all flex items-center space-x-1.5">
+                        <i class="fa-solid {% if item.voice_filename %}fa-rotate-right{% else %}fa-microphone{% endif %}" id="btnRegenIcon_{{ item.id }}"></i>
+                        <span id="btnRegenText_{{ item.id }}">{% if item.voice_filename %}Перегенерировать (Callirrhoe){% else %}Сгенерировать Callirrhoe{% endif %}</span>
+                    </button>
+                </div>
+
+                <!-- Music & Render Video Controls -->
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto justify-end">
+                    
+                    <!-- Music Selector & Mute -->
+                    <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5">
+                        <i class="fa-solid fa-music text-xs text-purple-400"></i>
+                        <select id="musicSelect_{{ item.id }}" onchange="updateMusicOption('{{ item.id }}', this.value)" class="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer">
+                            <option value="default" {% if item.music_option == 'default' %}selected{% endif %}>Фоновая музыка (-5.4 dB)</option>
+                            <option value="none" {% if item.music_option == 'none' %}selected{% endif %}>Без музыки (траурная / тишина)</option>
+                        </select>
+                    </div>
+
+                    <!-- Generate Video Button -->
+                    <button onclick="renderVideo('{{ item.id }}')" id="btnRenderVideo_{{ item.id }}" class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-emerald-950/40 flex items-center justify-center space-x-2 transition-all">
+                        <i class="fa-solid fa-film"></i>
+                        <span>ГЕНЕРИРОВАТЬ ВИДЕОРОЛИК</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Video Render Progress Bar & Video Player (Appears when rendering or ready) -->
+            <div id="videoRenderSection_{{ item.id }}" class="{% if not item.video_filename %}hidden{% endif %} bg-slate-950 border border-emerald-900/40 rounded-xl p-4 space-y-3">
+                <div id="renderProgressBox_{{ item.id }}" class="hidden space-y-2">
+                    <div class="flex items-center justify-between text-xs font-semibold">
+                        <span id="renderMessage_{{ item.id }}" class="text-sky-300">Рендеринг видеоролика...</span>
+                        <span id="renderPercent_{{ item.id }}" class="text-sky-400">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                        <div id="renderBar_{{ item.id }}" class="bg-gradient-to-r from-sky-500 to-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="videoPlayerBox_{{ item.id }}" class="{% if not item.video_filename %}hidden{% endif %} flex flex-col md:flex-row items-center gap-4">
+                    <div class="w-full md:w-80 aspect-video rounded-lg overflow-hidden bg-black shadow-lg">
+                        <video controls class="w-full h-full" id="videoElement_{{ item.id }}">
+                            {% if item.video_filename %}
+                            <source src="/cache/videos/{{ item.video_filename }}" type="video/mp4">
+                            {% endif %}
+                        </video>
+                    </div>
+                    <div class="flex-1 space-y-2 text-center md:text-left">
+                        <div class="flex items-center justify-center md:justify-start space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                            <span class="text-sm font-bold text-white">Телевизионный видеоролик готов!</span>
+                        </div>
+                        <p class="text-xs text-slate-400">
+                            Формат: Full HD 1080p • Отбивка телеканала • Слайды Кена Бернса • Голос диктора Callirrhoe • Фоновая музыка (-5.4 dB) • Логотип телеканала • Fade Out
+                        </p>
+                        <div class="flex items-center justify-center md:justify-start space-x-3 pt-2">
+                            <a id="btnDownloadVideo_{{ item.id }}" href="/api/news/{{ item.id }}/download" download="{{ item.video_filename or (item.title ~ '.mp4') }}" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow flex items-center space-x-2 transition-all">
+                                <i class="fa-solid fa-download"></i>
+                                <span>Скачать MP4</span>
+                            </a>
+                            <a href="/archive" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-all">
+                                В архив видео
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Modal for Image Search -->
+<div id="imageSearchModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-image text-purple-400"></i>
+                <span>Поиск фото для видеоряда</span>
+            </h3>
+            <button onclick="closeSearchModal()" class="text-slate-400 hover:text-white text-sm">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <p class="text-xs text-slate-400">
+            Введите ключевые слова (например: «ремонт дорог спецтехника», «губернатор», «котельная»). Найденные фото будут автоматически приведены к формату Full HD 1080p методом UNCROP.
+        </p>
+
+        <div class="flex items-center space-x-2">
+            <input type="text" id="customSearchQuery" placeholder="Поисковый запрос..." class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
+            <button onclick="executeCustomImageSearch()" id="btnExecuteSearch" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-bold flex items-center space-x-1.5 transition-all">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span>Найти</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Slide Preview -->
+<div id="slidePreviewModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4" onclick="closePreviewModal()">
+    <div class="max-w-5xl w-full">
+        <img id="previewModalImage" src="" alt="Full preview" class="w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl">
+    </div>
+</div>
+
+<!-- Modal for Video Preview -->
+<div id="videoPreviewModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-5 space-y-4 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-play text-sky-400"></i>
+                <span id="videoPreviewTitle">Просмотр видео</span>
+            </h3>
+            <button onclick="closeVideoPreviewModal()" class="text-slate-400 hover:text-white text-sm">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="aspect-video bg-black rounded-lg overflow-hidden shadow-inner">
+            <video id="videoPreviewPlayer" controls class="w-full h-full"></video>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for City B-Roll Video Picker -->
+<div id="brollModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col p-6 space-y-3 shadow-2xl">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-film text-sky-400"></i>
+                    <span>База видео архива (B-Roll)</span>
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">
+                    Папка архива: <span class="font-mono text-sky-300 font-semibold" id="brollFolderDisplay">F:\КОНСЕРВЫ</span>
+                </p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <label class="px-3 py-1.5 text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white rounded-lg transition-all flex items-center space-x-1 cursor-pointer shadow">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Загрузить видео</span>
+                    <input type="file" accept="video/*" class="hidden" onchange="uploadToBrollLibrary(this)">
+                </label>
+                <button onclick="closeBrollModal()" class="text-slate-400 hover:text-white text-sm px-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Toolbar: Search + Breadcrumbs -->
+        <div class="space-y-2">
+            <!-- Search input -->
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                <input id="brollSearchInput" type="text" placeholder="Поиск по названию во всех папках архива КОНСЕРВЫ..." 
+                       oninput="onBrollSearchInput(this.value)"
+                       class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors">
+                <button id="brollClearSearchBtn" onclick="clearBrollSearch()" class="hidden absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Breadcrumbs bar -->
+            <div id="brollNavToolbar" class="flex items-center space-x-2 bg-slate-950/70 p-2 rounded-xl border border-slate-800 text-xs">
+                <button id="brollUpBtn" onclick="brollGoUp()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none text-slate-200 rounded font-semibold text-xs flex items-center space-x-1 transition-all" title="На уровень вверх">
+                    <i class="fa-solid fa-arrow-up text-sky-400"></i>
+                    <span>Вверх</span>
+                </button>
+                <div class="h-4 w-px bg-slate-800 mx-1"></div>
+                <div id="brollBreadcrumbs" class="flex items-center space-x-1.5 flex-wrap text-xs text-slate-400 font-medium">
+                    <!-- Dynamic breadcrumbs -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Scrollable Explorer Body -->
+        <div class="flex-1 overflow-y-auto pr-1 space-y-4 min-h-[350px]">
+            <!-- Loading indicator -->
+            <div id="brollLoadingIndicator" class="text-center py-12 text-slate-400">
+                <i class="fa-solid fa-spinner animate-spin text-2xl mb-2 text-sky-400"></i>
+                <p class="text-sm">Чтение архива видео...</p>
+            </div>
+
+            <!-- Folders Section -->
+            <div id="brollFoldersSection" class="hidden space-y-2">
+                <div class="flex items-center justify-between text-xs font-semibold text-slate-400 px-1">
+                    <span class="flex items-center space-x-1.5"><i class="fa-solid fa-folder text-amber-400"></i> <span>Папки</span></span>
+                    <span id="brollFoldersCount" class="text-slate-500 font-mono text-[11px]"></span>
+                </div>
+                <div id="brollFoldersGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    <!-- Dynamic folder cards -->
+                </div>
+            </div>
+
+            <!-- Videos Section -->
+            <div id="brollVideosSection" class="hidden space-y-2">
+                <div class="flex items-center justify-between text-xs font-semibold text-slate-400 px-1">
+                    <span class="flex items-center space-x-1.5"><i class="fa-solid fa-film text-sky-400"></i> <span>Видеофайлы</span></span>
+                    <span id="brollVideosCount" class="text-slate-500 font-mono text-[11px]"></span>
+                </div>
+                <div id="brollGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <!-- Dynamic video cards -->
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div id="brollEmptyState" class="hidden p-10 text-center bg-slate-950/60 rounded-xl border border-slate-800 space-y-3">
+                <i class="fa-solid fa-folder-open text-4xl text-slate-600"></i>
+                <p class="text-slate-300 font-bold" id="brollEmptyTitle">В этой папке нет видеороликов</p>
+                <p class="text-xs text-slate-400 max-w-md mx-auto" id="brollEmptyDesc">
+                    Перейдите в другие подпапки архива или воспользуйтесь строкой поиска вверху.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

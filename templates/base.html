@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}V-GEN{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-touch-icon.png">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        tv: {
+                            red: '#e11d48',
+                            dark: '#0f172a',
+                            panel: '#1e293b',
+                            border: '#334155',
+                            accent: '#38bdf8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- Top Broadcast Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand / Only V-GEN -->
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-black tracking-wider text-white hover:text-sky-400 transition-colors">
+                        V-GEN
+                    </a>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="flex items-center space-x-1 sm:space-x-2">
+                    <a href="/" class="px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 {% if request.url.path == '/' %}bg-red-600/20 text-red-400 border border-red-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800{% endif %}">
+                        <i class="fa-solid fa-newspaper"></i>
+                        <span>Новости и сборка</span>
+                    </a>
+                    <a href="/admin" class="px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 {% if request.url.path == '/admin' %}bg-sky-600/20 text-sky-400 border border-sky-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800{% endif %}">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>Админ-панель</span>
+                    </a>
+                    <a href="/archive" class="px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 {% if request.url.path == '/archive' %}bg-emerald-600/20 text-emerald-400 border border-emerald-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800{% endif %}">
+                        <i class="fa-solid fa-film"></i>
+                        <span>Архив видео</span>
+                    </a>
+                </nav>
+
+                <!-- Author Contacts Header Badge -->
+                <div class="hidden lg:flex items-center space-x-2 text-xs text-slate-400 bg-slate-950/70 border border-slate-800 px-3.5 py-1.5 rounded-lg shadow-inner">
+                    <span class="text-slate-200 font-semibold">Автор скрипта — Дмитрий Асанов</span>
+                    <span class="text-slate-600">•</span>
+                    <span>телеграм <a href="https://t.me/sandefiord" target="_blank" class="text-sky-400 hover:text-sky-300 font-medium hover:underline">@sandefiord</a></span>
+                    <span class="text-slate-600">•</span>
+                    <span>мейл <a href="mailto:asanov@lux.tv.ru" class="text-sky-400 hover:text-sky-300 font-medium hover:underline">asanov@lux.tv.ru</a></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 text-xs text-slate-500 text-center">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div>
+                <strong class="text-slate-400">V-GEN</strong> — Автоматическая система сборки новостных сюжетов и генерации видео • Full HD 1080p
+            </div>
+            <div class="text-slate-400">
+                Автор: Дмитрий Асанов • <a href="https://t.me/sandefiord" target="_blank" class="text-sky-400 hover:underline">@sandefiord</a> • <a href="mailto:asanov@lux.tv.ru" class="text-sky-400 hover:underline">asanov@lux.tv.ru</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

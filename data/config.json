@@ -1,0 +1,428 @@
+{
+  "ai_provider": "gemini",
+  "gemini_api_key": "AIzaSyAN9qn_dKa3OZ5Qy8Zwj35TsOrHkUWQHoQ",
+  "gemini_text_model": "gemini-3.8-flash",
+  "gemini_use_search_grounding": true,
+  "search_prompt": "1. ГЕОГРАФИЯ И ФИЛЬТР ОТБОРА\nМатериал принимается в работу ТОЛЬКО если он удовлетворяет одному из условий:\n- Прямое отношение: события, решения, происшествия, люди в г. Тутаев (правый/левый берег) и населённых пунктах района (п. Константиновский, п. Фоминское, с. Чебаково, с. Пшеничище и др.).\n- Региональное значение: общеобластные решения губернатора и правительства Ярославской области, изменения законов, проверки МЧС или тарифы ЖКХ, которые напрямую затрагивают жителей Тутаевского района.\n\n2. ТЕМАТИЧЕСКИЕ НАПРАВЛЕНИЯ\n- Происшествия и безопасность: сводки МЧС, ГИБДД, следственного комитета, судов.\n- ЖКХ и городская среда: отопительный сезон, ремонты теплосетей, дорог, благоустройство, работа паромной/теплоходной переправы.\n- Социальная сфера: здравоохранение (Тутаевская ЦРБ), образование (школы, детсады).\n- Культура, спорт и досуг: анонсы и итоги событий РДК им. Малова, ДК «Восход», молодежного центра «Галактика», сельских ДК, спортивных секций и турниров.\n- Афиша: только конкретные даты, места и условия входа на ближайшие дни.\n\n3. ПРАВИЛА АДАПТАЦИИ ПОД ДИКТОРА\n- Объём: строго 800–1000 символов с пробелами на одну новость (хронометраж читки ~45–60 секунд).\n- Стиль: телевизионный новостной, устная речь. Без канцелярских штампов («имеет место быть», «в целях реализации мероприятий»). В сокращенную новость не надо добавлять обращений к зрителям. Сухая информация по теме новости и все.\n- Числа и даты: записывать словами там, где диктору легко запнуться (например: «седьмого октября», «более тридцати лет»).\n- Динамика: первое предложение — суть новости (хук), далее факты и подробности, финал — последствия, статус или дата следующего события/анонса.\n\n4. СТРУКТУРА ВЫХОДНОГО ОТВЕТА (ДЛЯ КАЖДОЙ НОВОСТИ)\nОтдавай результат строго по следующему шаблону:\n\n---\nЗАГОЛОВОК: [Краткий ёмкий заголовок до 60 символов]\nРУБРИКА: [Происшествия / ЖКХ / Власть / Культура / Спорт / Афиша]\nХРОНОМЕТРАЖ: [~45–60 сек]\n\nТЕКСТ ДЛЯ ДИКТОРА:\n[Текст строго от 800 до 1000 знаков, полностью адаптированный под выразительную устную начитку].\n---",
+  "search_mode": "dynamic",
+  "gemini_tts_model": "gemini-3.8-flash-tts",
+  "tts_speaker": "Callirrhoe",
+  "tts_language": "ru",
+  "proxy_url": "",
+  "vk_service_token": "78b509df78b509df78b509df1f7bf15c5a778b578b509df127355bb9b38fc8d24d511d7",
+  "bumper_path": "F:\\новостник\\отбивка.mp4",
+  "default_music_path": "F:\\новостник\\музыка.wav",
+  "logo_path": "F:\\новостник\\логотип.png",
+  "logo_position": "top_left",
+  "city_videos_dir": "F:\\\\КОНСЕРВЫ",
+  "music_volume_db": -5.4,
+  "voice_lead_in": 1.0,
+  "voice_lead_out": 3.0,
+  "slide_duration_target": 8.0,
+  "min_images_per_news": 5,
+  "max_images_per_news": 10,
+  "news_days": 7,
+  "max_chars": 1000,
+  "sources": [
+    {
+      "id": "76ru",
+      "name": "76.RU | Ярославль",
+      "url": "https://76.ru/text/rss.xml",
+      "type": "rss",
+      "enabled": true,
+      "category": "СМИ и порталы"
+    },
+    {
+      "id": "vesti_yar",
+      "name": "Вести Ярославль (ГТРК)",
+      "url": "https://vesti-yaroslavl.ru/novosti",
+      "type": "site",
+      "enabled": true,
+      "category": "СМИ и порталы"
+    },
+    {
+      "id": "admtmr_site",
+      "name": "Администрация Тутаевского района (Сайт)",
+      "url": "https://admtmr.ru/",
+      "type": "site",
+      "enabled": true,
+      "category": "Официальные сайты"
+    },
+    {
+      "id": "za_tutaev_site",
+      "name": "ЗА ТУТАЕВ (Сайт)",
+      "url": "https://za-tutaev.ru/",
+      "type": "site",
+      "enabled": true,
+      "category": "СМИ и порталы"
+    },
+    {
+      "id": "yarreg_site",
+      "name": "Ярославский регион",
+      "url": "https://yarreg.ru/",
+      "type": "site",
+      "enabled": true,
+      "category": "СМИ и порталы"
+    },
+    {
+      "id": "sevkray_site",
+      "name": "Северный край",
+      "url": "https://sevkray.ru/",
+      "type": "site",
+      "enabled": true,
+      "category": "СМИ и порталы"
+    },
+    {
+      "id": "yarnovosti_site",
+      "name": "ЯРНОВОСТИ (Сайт)",
+      "url": "https://yarnovosti.com/",
+      "type": "site",
+      "enabled": true,
+      "category": "СМИ и порталы"
+    },
+    {
+      "id": "firstyar_site",
+      "name": "Первый Ярославский (Сайт)",
+      "url": "https://1yar.tv/",
+      "type": "site",
+      "enabled": true,
+      "category": "СМИ и порталы"
+    },
+    {
+      "id": "vk_tutaev",
+      "name": "ТУТАЕВ | ПОДСЛУШАНО",
+      "url": "https://vk.com/tutaev",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Тутаев)"
+    },
+    {
+      "id": "vk_tutaevtoday",
+      "name": "ТУТАЕВ СЕГОДНЯ",
+      "url": "https://vk.com/tutaevtoday",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Тутаев)"
+    },
+    {
+      "id": "vk_tipitutaev",
+      "name": "ТИПИЧНЫЙ ТУТАЕВ",
+      "url": "https://vk.com/tipitutaev",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Тутаев)"
+    },
+    {
+      "id": "vk_vtutaeve",
+      "name": "Мой Тутаев | Главные новости",
+      "url": "https://vk.com/vtutaeve",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Тутаев)"
+    },
+    {
+      "id": "vk_podslushanovtutaeve",
+      "name": "Подслушано в Тутаеве",
+      "url": "https://vk.com/podslushanovtutaeve",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Тутаев)"
+    },
+    {
+      "id": "vk_overheard_by_tutaev",
+      "name": "Подслушано Тутаев",
+      "url": "https://vk.com/overheard_by_tutaev",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Тутаев)"
+    },
+    {
+      "id": "vk_za_tutaev",
+      "name": "ЗА ТУТАЕВ",
+      "url": "https://vk.com/za_tutaev",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Тутаев)"
+    },
+    {
+      "id": "vk_vecherniy_konst",
+      "name": "ВЕЧЕРНИЙ КОНСТАНТИНОВСКИЙ",
+      "url": "https://vk.com/vecherniy_konstantinovskiy",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Поселения)"
+    },
+    {
+      "id": "vk_pos_konst",
+      "name": "Константиновский | Тутаевский район",
+      "url": "https://vk.com/pos_konstantinovskiy",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Поселения)"
+    },
+    {
+      "id": "vk_podslushano_chebakovo",
+      "name": "Подслушано Чебаково",
+      "url": "https://vk.com/podslushano_chebakovo",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Поселения)"
+    },
+    {
+      "id": "vk_chebakovo_selo",
+      "name": "Чебаково Тутаевский район",
+      "url": "https://vk.com/chebakovo_selo",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Поселения)"
+    },
+    {
+      "id": "vk_fominskoe_news",
+      "name": "Фоминское | Тутаевский район",
+      "url": "https://vk.com/fominskoe_news",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Поселения)"
+    },
+    {
+      "id": "vk_pshenichishe",
+      "name": "Пшеничище | Новости села",
+      "url": "https://vk.com/pshenichishe",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Поселения)"
+    },
+    {
+      "id": "vk_levoberezhny_tutaev",
+      "name": "Левобережный Тутаев",
+      "url": "https://vk.com/levoberezhny_tutaev",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Тутаев)"
+    },
+    {
+      "id": "vk_tutaevadm",
+      "name": "Администрация Тутаевского округа",
+      "url": "https://vk.com/tutaevadm",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Официальные)"
+    },
+    {
+      "id": "vk_tutaevcrb",
+      "name": "Тутаевская ЦРБ",
+      "url": "https://vk.com/tutcrb",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Официальные)"
+    },
+    {
+      "id": "vk_dept_edu_tutaev",
+      "name": "Департамент образования ТМР",
+      "url": "https://vk.com/dept_edu_tutaev",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Официальные)"
+    },
+    {
+      "id": "vk_kulturatmr",
+      "name": "Департамент культуры и туризма ТМР",
+      "url": "https://vk.com/kulturatmr",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Официальные)"
+    },
+    {
+      "id": "vk_djkh_tutaev",
+      "name": "Департамент ЖКХ и строительства ТМР",
+      "url": "https://vk.com/djkh_tutaev",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Официальные)"
+    },
+    {
+      "id": "vk_rdk_malova",
+      "name": "РДК им. А.Г. Малова",
+      "url": "https://vk.com/rdk_malova",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Культура)"
+    },
+    {
+      "id": "vk_gortutaev",
+      "name": "Городской клуб (Левый берег)",
+      "url": "https://vk.com/gortutaev",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Культура)"
+    },
+    {
+      "id": "vk_dk_voshod_konst",
+      "name": "ДК «Восход» (п. Константиновский)",
+      "url": "https://vk.com/dk_voshod_konst",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Культура)"
+    },
+    {
+      "id": "vk_fominskiy_sdk",
+      "name": "Фоминский сельский ДК",
+      "url": "https://vk.com/fominskiy_sdk",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Культура)"
+    },
+    {
+      "id": "vk_chebakovskiy_sdk",
+      "name": "Чебаковский сельский ДК",
+      "url": "https://vk.com/chebakovskiy_sdk",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Культура)"
+    },
+    {
+      "id": "vk_visittutaev",
+      "name": "Центр «Романов-Борисоглебск»",
+      "url": "https://vk.com/visittutaev",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Культура)"
+    },
+    {
+      "id": "vk_mc_galaktika",
+      "name": "МЦ «Галактика» Тутаевского района",
+      "url": "https://vk.com/mc_galaktika",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Молодежь)"
+    },
+    {
+      "id": "vk_tutaev_bibl",
+      "name": "Центральная библиотека Тутаева",
+      "url": "https://vk.com/tutaev_bibl",
+      "type": "vk",
+      "enabled": true,
+      "category": "ВКонтакте (Культура)"
+    },
+    {
+      "id": "tg_adm_tmr",
+      "name": "Администрация Тутаевского района (TG)",
+      "url": "https://t.me/adm_tmr",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Официальные)"
+    },
+    {
+      "id": "tg_nizova_tmr",
+      "name": "Ольга Низова (Глава Тутаевского р-на)",
+      "url": "https://t.me/nizova_tmr",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Официальные)"
+    },
+    {
+      "id": "tg_evraev",
+      "name": "Губернатор Михаил Евраев (TG)",
+      "url": "https://t.me/evraevmikhail",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Официальные)"
+    },
+    {
+      "id": "tg_yarregion",
+      "name": "Правительство Ярославской области (TG)",
+      "url": "https://t.me/yarregion",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Официальные)"
+    },
+    {
+      "id": "tg_mchs",
+      "name": "МЧС Ярославской области (TG)",
+      "url": "https://t.me/mchs_yaroslavl",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Официальные)"
+    },
+    {
+      "id": "tg_tutpodslushano",
+      "name": "Подслушано Тутаев (TG)",
+      "url": "https://t.me/tutpodslushano",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Тутаев)"
+    },
+    {
+      "id": "tg_tutaev_live",
+      "name": "Тутаев Live (TG)",
+      "url": "https://t.me/tutaev_live",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Тутаев)"
+    },
+    {
+      "id": "tg_za_tutaev",
+      "name": "За Тутаев (TG)",
+      "url": "https://t.me/za_tutaev",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Тутаев)"
+    },
+    {
+      "id": "tg_romanov_borisoglebsk",
+      "name": "Романов-Борисоглебск Онлайн (TG)",
+      "url": "https://t.me/romanov_borisoglebsk",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Тутаев)"
+    },
+    {
+      "id": "tg_news76",
+      "name": "76.RU | Новости Ярославля (TG)",
+      "url": "https://t.me/news76",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Регион)"
+    },
+    {
+      "id": "tg_yarregion_news",
+      "name": "Ярославский регион (TG)",
+      "url": "https://t.me/yarregion_news",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Регион)"
+    },
+    {
+      "id": "tg_vesti_yar",
+      "name": "Вести Ярославль (TG)",
+      "url": "https://t.me/vesti_yaroslavl",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Регион)"
+    },
+    {
+      "id": "tg_firstyar",
+      "name": "Первый Ярославский (TG)",
+      "url": "https://t.me/firstyaroslavskiy",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Регион)"
+    },
+    {
+      "id": "tg_yarnovosti",
+      "name": "ЯРНОВОСТИ (TG)",
+      "url": "https://t.me/yarnovosti_official",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Регион)"
+    },
+    {
+      "id": "tg_zhest_yar",
+      "name": "Жесть Ярославль (ДТП, ЧП) (TG)",
+      "url": "https://t.me/zhest_yaroslavl",
+      "type": "telegram",
+      "enabled": true,
+      "category": "Telegram (Сводки ЧП)"
+    }
+  ]
+}

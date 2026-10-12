@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}V-GEN — Настройки{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-5xl mx-auto">
+
+    <!-- Header -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-black text-white flex items-center space-x-2">
+                <i class="fa-solid fa-sliders text-sky-400"></i>
+                <span>Панель управления V-GEN</span>
+            </h1>
+            <p class="text-sm text-slate-400 mt-1">
+                Настройки подключения к Google AI Studio Gemini API, поисковый промпт, выбор дикторов Gemini TTS и медиафайлы телеканала.
+            </p>
+        </div>
+        <button onclick="saveAllSettings()" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-sky-950/40 flex items-center space-x-2 transition-all">
+            <i class="fa-solid fa-check"></i>
+            <span>Сохранить настройки</span>
+        </button>
+    </div>
+
+    <!-- Section 1: Google Gemini API (Free Tier with Google Search Grounding) -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                <i class="fa-brands fa-google text-sky-400"></i>
+                <span>Интеллектуальный поиск и рерайт: Google Gemini API</span>
+            </h2>
+            <span class="text-xs px-2.5 py-1 rounded bg-sky-950 text-sky-400 border border-sky-800 font-mono font-bold">
+                Free Tier (15 RPM / 1500 RPD)
+            </span>
+        </div>
+
+        <input type="hidden" id="cfgAiProvider" value="gemini">
+
+        <!-- Google Gemini Settings Card -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm font-bold text-white">Ключ Google AI Studio (Gemini)</span>
+                    <a href="https://aistudio.google.com/apikey" target="_blank" class="text-xs text-sky-400 hover:underline flex items-center space-x-1">
+                        <span>Получить бесплатный ключ</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+                <span class="text-[11px] text-emerald-400 font-mono"><i class="fa-solid fa-circle-check mr-1"></i>Официальный Free Tier</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="md:col-span-2 space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Gemini API Key</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="password" id="cfgGeminiKey" value="{{ config.gemini_api_key }}" placeholder="AIzaSy..." class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-sky-500">
+                        <button onclick="toggleVisibility('cfgGeminiKey', this)" class="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs border border-slate-700" title="Показать/скрыть">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <button onclick="testProvider('gemini')" id="btnTest_gemini" class="px-3 py-2 bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white rounded-lg text-xs font-bold border border-sky-500/40 transition-all flex items-center space-x-1">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Проверить</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Модель рерайта</label>
+                    <select id="cfgTextModel" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+                        <option value="gemini-3.8-flash" {% if config.gemini_text_model == 'gemini-3.8-flash' %}selected{% endif %}>gemini-3.8-flash (Флагман Free Tier, рекомендуемая)</option>
+                        <option value="gemini-3.5-flash-lite" {% if config.gemini_text_model == 'gemini-3.5-flash-lite' %}selected{% endif %}>gemini-3.5-flash-lite (Сверхбыстрая Free Tier)</option>
+                        <option value="gemini-flash-latest" {% if config.gemini_text_model == 'gemini-flash-latest' %}selected{% endif %}>gemini-flash-latest (Авто-обновление)</option>
+                        <option value="gemini-3.5-flash" {% if config.gemini_text_model == 'gemini-3.5-flash' %}selected{% endif %}>gemini-3.5-flash (Сбалансированная)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Grounding with Google Search Switch -->
+            <div class="pt-2 border-t border-slate-900 space-y-1">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="cfgGeminiGrounding" class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0" {% if config.gemini_use_search_grounding %}checked{% endif %}>
+                    <span class="text-xs font-bold text-sky-300">
+                        <i class="fa-solid fa-magnifying-glass text-sky-400 mr-1"></i>
+                        Поиск Google в реальном времени (Grounding with Google Search)
+                    </span>
+                </label>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    В API передаётся параметр <code>tools: [{"googleSearch": {}}]</code>. Модель в реальном времени обращается к поисковой выдаче Google за последние 7 дней перед формированием подборки.
+                </p>
+            </div>
+
+            <div id="feedback_gemini" class="hidden text-xs font-medium p-2.5 rounded leading-relaxed"></div>
+        </div>
+
+        <!-- Network & Proxy Settings -->
+        <div class="border-t border-slate-800 pt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Proxy Settings -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
+                    <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                    <span>Прокси-сервер (HTTP / SOCKS5 для работы в РФ)</span>
+                </label>
+                <input type="text" id="cfgProxyUrl" value="{{ config.proxy_url }}" placeholder="http://127.0.0.1:7890 или socks5://127.0.0.1:1080" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500 font-mono">
+                <p class="text-[11px] text-slate-400">
+                    Если у вас включен системный VPN — оставьте поле пустым.
+                </p>
+            </div>
+
+            <!-- VK Service Token -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
+                    <i class="fa-brands fa-vk text-sky-400"></i>
+                    <span>Сервисный ключ доступа ВКонтакте (VK Service Token)</span>
+                </label>
+                <input type="password" id="cfgVkToken" value="{{ config.vk_service_token }}" placeholder="vk1.a.XXXXXXXX..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-sky-500 font-mono">
+                <p class="text-[11px] text-slate-400">
+                    Для поиска Full HD фото и новостей в пабликах района (<a href="https://vk.com/dev" target="_blank" class="text-sky-400 underline">vk.com/dev</a>).
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1.2: Search & Editorial Prompt (Инструкция для AI) -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-4">
+        <div class="border-b border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-file-pen text-amber-400"></i>
+                    <span>Поисковый и редакционный промпт (Инструкция для AI)</span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">
+                    По этому промпту нейросеть осуществляет отбор инфоповодов, фильтрацию тем и адаптацию текста строго до 1000 знаков.
+                </p>
+            </div>
+            <button onclick="resetSearchPromptToDefault()" type="button" class="self-start sm:self-auto px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 rounded-lg text-xs font-bold border border-amber-500/30 transition-all flex items-center space-x-1.5 shadow-sm">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Сбросить к исходному промпту</span>
+            </button>
+        </div>
+
+        <div class="space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+                <span>Инструкция (география, тематики, дикторский хронометраж и шаблон):</span>
+                <span id="promptCharCount" class="font-mono text-sky-400 font-bold">Символов: {{ config.search_prompt|length }}</span>
+            </div>
+            <textarea id="cfgSearchPrompt" rows="18" oninput="updatePromptCharCount()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 leading-relaxed focus:outline-none focus:border-amber-500 shadow-inner resize-y">{{ config.search_prompt }}</textarea>
+            <p class="text-[11px] text-slate-500">
+                Вы можете свободно редактировать правила, добавлять села, менять рубрики и требования к языку. Сохраните изменения внизу страницы.
+            </p>
+        </div>
+    </div>
+
+    <!-- Section 1.5: Voice Synthesis (TTS - Выбор голосов Gemini) -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-microphone-lines text-emerald-400"></i>
+                <span>Синтез речи телеведущего (Google Gemini TTS)</span>
+            </h2>
+            <span class="text-xs px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono font-bold">
+                По умолчанию: Callirrhoe
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Speaker Selector (All Gemini Voices) -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <span>Диктор телеканала (Gemini Speaker)</span>
+                    <span class="text-emerald-400 text-[11px] font-normal">По умолчанию: Callirrhoe</span>
+                </label>
+                <select id="cfgTtsSpeaker" class="w-full bg-slate-950 border border-emerald-800/60 rounded-lg px-3 py-2.5 text-sm text-emerald-300 font-bold focus:outline-none focus:border-emerald-500 cursor-pointer">
+                    {% for v in gemini_voices %}
+                    <option value="{{ v.id }}" {% if config.tts_speaker == v.id or (not config.tts_speaker and v.id == 'Callirrhoe') %}selected{% endif %}>
+                        {{ v.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="text-[11px] text-slate-400">
+                    Официальный телевизионный диктор — <strong>Callirrhoe</strong> (энергичный, теплый голос). Доступны также все альтернативные дикторы Gemini.
+                </p>
+            </div>
+
+            <!-- Gemini TTS Model -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Рабочая модель Gemini TTS (Free Tier)
+                </label>
+                <select id="cfgTtsModel" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="gemini-3.8-flash-tts" {% if config.gemini_tts_model == 'gemini-3.8-flash-tts' %}selected{% endif %}>gemini-3.8-flash-tts (Флагман Free Tier, рекомендуемая)</option>
+                    <option value="gemini-2.5-flash-preview-tts" {% if config.gemini_tts_model == 'gemini-2.5-flash-preview-tts' %}selected{% endif %}>gemini-2.5-flash-preview-tts (Сверхбыстрая генерация)</option>
+                    <option value="gemini-3.1-flash-tts-preview" {% if config.gemini_tts_model == 'gemini-3.1-flash-tts-preview' %}selected{% endif %}>gemini-3.1-flash-tts-preview (Альтернативная Flash)</option>
+                    <option value="gemini-3.8-flash-lite-tts" {% if config.gemini_tts_model == 'gemini-3.8-flash-lite-tts' %}selected{% endif %}>gemini-3.8-flash-lite-tts (Легковесная Lite)</option>
+                </select>
+                <p class="text-[11px] text-slate-500">
+                    Синтез речи озвучивает исключительно чистый текст новости из поля «Текст для диктора» строго до 1000 знаков.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Media Assets & TV Assembly Timings -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-clapperboard text-red-500"></i>
+                <span>Оформление эфира, медиафайлы и тайминги</span>
+            </h2>
+            <span class="text-xs px-2.5 py-1 rounded bg-red-950 text-red-400 border border-red-800 font-mono">
+                Full HD 1080p
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Bumper -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <span>Видеофайл отбивки телеканала</span>
+                    <span class="text-emerald-400 lowercase font-normal">F:\новостник\отбивка.mp4</span>
+                </label>
+                <input type="text" id="cfgBumperPath" value="{{ config.bumper_path }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono">
+                <div class="w-full aspect-video rounded-lg overflow-hidden bg-black mt-2">
+                    <video controls class="w-full h-full">
+                        <source src="/media/preview/bumper" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+
+            <!-- Music -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <span>Фоновая музыка (бэкграунд)</span>
+                    <span class="text-purple-400 lowercase font-normal">F:\новостник\музыка.wav</span>
+                </label>
+                <input type="text" id="cfgMusicPath" value="{{ config.default_music_path }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono">
+                <div class="mt-2 bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-3">
+                    <audio controls class="w-full">
+                        <source src="/media/preview/music" type="audio/wav">
+                    </audio>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400 font-medium">Громкость фоновой музыки по ТЗ:</span>
+                        <div class="flex items-center space-x-1 font-mono">
+                            <input type="number" step="0.1" id="cfgMusicDb" value="{{ config.music_volume_db }}" class="w-20 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sky-400 text-center font-bold">
+                            <span class="text-slate-400">дБ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Channel Logo -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <span>Логотип телеканала (PNG с прозрачностью)</span>
+                    <span class="text-sky-400 lowercase font-normal">F:\новостник\логотип.png</span>
+                </label>
+                <input type="text" id="cfgLogoPath" value="{{ config.logo_path }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono">
+                <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between gap-4 mt-2">
+                    <div class="h-14 p-2 bg-slate-900/80 rounded border border-slate-700/60 flex items-center justify-center">
+                        <img src="/media/preview/logo" alt="Logo preview" class="max-h-full max-w-full object-contain">
+                    </div>
+                    <label class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded-lg text-xs font-bold border border-slate-700 cursor-pointer flex items-center space-x-1.5">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>Загрузить новый PNG</span>
+                        <input type="file" accept="image/png" class="hidden" onchange="uploadLogo(this)">
+                    </label>
+                </div>
+                <div class="flex items-center justify-between text-xs pt-1">
+                    <span class="text-slate-400">Позиция логотипа в кадре:</span>
+                    <select id="cfgLogoPos" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200">
+                        <option value="top_right" {% if config.logo_position == 'top_right' %}selected{% endif %}>Сверху справа (ТВ стандарт)</option>
+                        <option value="top_left" {% if config.logo_position == 'top_left' %}selected{% endif %}>Сверху слева</option>
+                        <option value="bottom_right" {% if config.logo_position == 'bottom_right' %}selected{% endif %}>Снизу справа</option>
+                    </select>
+                </div>
+
+                <div class="space-y-2 pt-2 border-t border-slate-800">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                        <span>База видео города (B-Roll)</span>
+                        <span class="text-sky-400 font-normal">F:\КОНСЕРВЫ</span>
+                    </label>
+                    <input type="text" id="cfgBrollDir" value="{{ config.city_videos_dir }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono">
+                    <p class="text-[11px] text-slate-500">
+                        Папка с видеороликами видов города для вставки в сюжеты вместо фото. При монтаже длительность роликов строго ограничивается под хронометраж слайдов.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Timings -->
+            <div class="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block border-b border-slate-800 pb-2">
+                    Тайминги монтажа по ТЗ
+                </span>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-300">Пауза показа первого слайда до старта голоса:</span>
+                    <span class="font-mono font-bold text-sky-400">1.0 сек</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-300">Показ последнего слайда после окончания голоса:</span>
+                    <span class="font-mono font-bold text-sky-400">3.0 сек</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-300">Рекомендуемая смена слайдов:</span>
+                    <span class="font-mono font-bold text-purple-400">~8.0 сек (динамически под ролик)</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-300">Затухание изображения и музыки (Fade Out):</span>
+                    <span class="font-mono font-bold text-emerald-400">1.5 сек</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Section 3: News Sources Management -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-rss text-amber-500"></i>
+                <span>Источники новостей (RSS-ленты и сайты)</span>
+            </h2>
+            <span class="text-xs text-slate-400">За последние {{ config.news_days }} дней</span>
+        </div>
+
+        <!-- Sources Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-semibold">
+                    <tr>
+                        <th class="p-3">Вкл</th>
+                        <th class="p-3">Источник</th>
+                        <th class="p-3">Категория</th>
+                        <th class="p-3">URL Ленты</th>
+                        <th class="p-3 text-right">Действия</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800" id="sourcesTableBody">
+                    {% for s in config.sources %}
+                    <tr class="hover:bg-slate-800/40" data-source-id="{{ s.id }}">
+                        <td class="p-3">
+                            <input type="checkbox" class="source-toggle rounded bg-slate-900 border-slate-700 text-sky-600 focus:ring-0 cursor-pointer" {% if s.enabled %}checked{% endif %}>
+                        </td>
+                        <td class="p-3 font-bold text-white">{{ s.name }}</td>
+                        <td class="p-3 text-slate-400">{{ s.category }}</td>
+                        <td class="p-3 font-mono text-[11px] text-slate-400 truncate max-w-xs">{{ s.url }}</td>
+                        <td class="p-3 text-right space-x-2">
+                            <button onclick="testSourceUrl('{{ s.url }}')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded border border-slate-700">
+                                Тест
+                            </button>
+                            <button onclick="removeSource('{{ s.id }}')" class="px-2 py-1 bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white rounded border border-slate-700">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bottom Save Bar -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 sticky bottom-4 z-40 bg-slate-900/95 backdrop-blur border-sky-500/30">
+        <div>
+            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-floppy-disk text-sky-400"></i>
+                <span>Применить и сохранить все параметры</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Ключи API, выбранные модели нейросетей, дикторы и источники сохраняются в конфигурацию сервиса.</p>
+        </div>
+        <button onclick="saveAllSettings()" id="btnBottomSave" class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-sky-950/50 flex items-center justify-center space-x-2 transition-all">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>СОХРАНИТЬ ВСЕ НАСТРОЙКИ</span>
+        </button>
+    </div>
+
+</div>
+{% endblock %}
